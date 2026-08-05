@@ -1,6 +1,9 @@
 /* ================= میدان نبرد ================= */
 const enemyCamps=[];
+let legacyWorldRoot=null;
 function buildBattlefield(){
+  legacyWorldRoot=new THREE.Group(); scene.add(legacyWorldRoot);
+  const world=legacyWorldRoot;
   for(let i=0;i<13;i++){
     let x,z,ok=false,tries=0;
     while(!ok&&tries++<40){
@@ -14,11 +17,11 @@ function buildBattlefield(){
     const wm=mat({map:texWall});
     const b=new THREE.Mesh(new THREE.BoxGeometry(hw*2,hh,hd*2),[wm,wm,matRoof,matRoof,wm,wm]);
     b.position.set(x,hh/2,z); b.rotation.y=Math.random()*Math.PI;
-    b.castShadow=b.receiveShadow=true; scene.add(b);
+    b.castShadow=b.receiveShadow=true; world.add(b);
     buildings.push({x,z,hw:hw+0.4,hd:hd+0.4,h:hh});
     staticObs.push({type:'aabb',x,z,hw:hw+0.6,hd:hd+0.6,h:hh});
     for(let k=0;k<3;k++)
-      mkBox(scene,rand(0.6,1.6),rand(0.4,1),rand(0.6,1.6),matRock,
+      mkBox(world,rand(0.6,1.6),rand(0.4,1),rand(0.6,1.6),matRock,
         x+rand(-hw-2,hw+2),0.3,z+rand(-hd-2,hd+2),0,Math.random()*3,0);
   }
   for(let i=0;i<38;i++){
@@ -28,7 +31,7 @@ function buildBattlefield(){
     const t=new THREE.Group(); t.position.set(x,0,z);
     mkCyl(t,0.14,0.2,rand(1.6,2.6),matTrunk,0,1,0,0,0,0,8);
     mkSph(t,rand(1,1.8),matLeaf,0,rand(2.4,3.4),0,10,8);
-    scene.add(t); trees.push({x,z,root:t,alive:true});
+    world.add(t); trees.push({x,z,root:t,alive:true});
   }
   for(let i=0;i<16;i++){
     const a=Math.random()*Math.PI*2,d=rand(18,138);
@@ -36,7 +39,7 @@ function buildBattlefield(){
     const m=new THREE.Mesh(new THREE.IcosahedronGeometry(r,0),matRock);
     m.position.set(x,r*0.45,z); m.scale.y=0.6;
     m.rotation.set(Math.random(),Math.random()*3,Math.random());
-    m.castShadow=m.receiveShadow=true; scene.add(m);
+    m.castShadow=m.receiveShadow=true; world.add(m);
     staticObs.push({type:'circle',x,z,r:r*0.8});
   }
   for(let c=0;c<4;c++){
@@ -45,24 +48,24 @@ function buildBattlefield(){
     const g=new THREE.Group(); g.position.set(x,0,z); g.rotation.y=Math.random()*3;
     for(let i=0;i<5;i++)mkBox(g,1,0.35,0.5,matBag,(i-2)*1.02,0.2,0);
     for(let i=0;i<4;i++)mkBox(g,1,0.35,0.5,matBag,(i-1.5)*1.02,0.55,0);
-    scene.add(g);
+    world.add(g);
     staticObs.push({type:'aabb',x,z,hw:2.8,hd:0.7,h:0.9});
   }
   for(let i=0;i<10;i++){
     const a=i/10*Math.PI*2+rand(-0.2,0.2),d=rand(195,255);
     const m=new THREE.Mesh(new THREE.ConeGeometry(rand(35,65),rand(16,34),7),matHill);
-    m.position.set(Math.cos(a)*d,0,Math.sin(a)*d); scene.add(m);
+    m.position.set(Math.cos(a)*d,0,Math.sin(a)*d); world.add(m);
   }
   for(const [fx,fz] of [[150,-170],[-175,-95],[70,195]]){
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:texGlow,blending:THREE.AdditiveBlending,
       depthWrite:false,transparent:true,opacity:0.7}));
-    sp.position.set(fx,7,fz); sp.scale.set(30,22,1); scene.add(sp); farFires.push(sp);
+    sp.position.set(fx,7,fz); sp.scale.set(30,22,1); world.add(sp); farFires.push(sp);
   }
   for(let i=0;i<8;i++){
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:texSmoke,transparent:true,
       depthWrite:false,opacity:rand(0.18,0.3),color:0xffffff,fog:false}));
     sp.position.set(rand(-260,260),rand(55,90),rand(-260,260));
-    sp.scale.set(rand(70,120),rand(22,38),1); scene.add(sp); clouds.push(sp);
+    sp.scale.set(rand(70,120),rand(22,38),1); world.add(sp); clouds.push(sp);
   }
   /* علف‌ها */
   const grassGeo=new THREE.ConeGeometry(0.13,0.55,5);
@@ -79,7 +82,7 @@ function buildBattlefield(){
     tc.setHSL(0.22+Math.random()*0.05,0.32,rand(0.22,0.36));
     grass.setColorAt(gi,tc); gi++;
   }
-  scene.add(grass);
+  world.add(grass);
     /* کمپین‌های دشمن: چادر، آتش، جعبه مهمات، تانک‌های پارک‌شده */
   for(let i=0;i<3;i++){
     const ang=i*Math.PI*2/3+rand(-0.2,0.2),d=rand(140,195);
@@ -105,7 +108,7 @@ function buildBattlefield(){
       w.root.traverse(o=>{if(o.isMesh)o.material=matChar;});
       g.add(w.root);
     }
-    scene.add(g);
+    world.add(g);
     enemyCamps.push({x:cx,z:cz,root:g,alive:true});
     staticObs.push({type:'circle',x:cx,z:cz,r:6});
   }

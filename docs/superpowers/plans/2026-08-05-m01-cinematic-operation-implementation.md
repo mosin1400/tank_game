@@ -170,7 +170,7 @@ git commit -m "feat: define opening convoy operation data"
 - An active scene handle is `{id, root, colliders, effects, dispose}`.
 - Consumes `SceneLibrary.getScene`, `OpeningScene01.LAYOUT`, Three.js globals and existing material helpers `mkBox`, `mkCyl`, `mkSph`.
 
-- [ ] **Step 1: Write the failing lifecycle test**
+- [x] **Step 1: Write the failing lifecycle test**
 
 Create `tests/scene-lifecycle-check.mjs` with a minimal fake builder dependency that counts `add`, `remove`, `addCollider`, and `removeCollider`. Assert loading `scene-01` produces one root, calling `clearActive` removes the root and all scene colliders, and calling clear twice does not remove anything twice.
 
@@ -181,17 +181,17 @@ builder.clearActive(); builder.clearActive();
 if(fake.removed!==1||fake.colliderRemovals!==active.colliders.length)throw new Error('scene cleanup must be idempotent');
 ```
 
-- [ ] **Step 2: Run the test and verify RED**
+- [x] **Step 2: Run the test and verify RED**
 
 Run: `node tests/scene-lifecycle-check.mjs`
 
 Expected: failure because `SceneBuilder` does not exist.
 
-- [ ] **Step 3: Implement owned scene layers**
+- [x] **Step 3: Implement owned scene layers**
 
 Load `scene-library.js`, `scene-01.js`, and `scene-builder.js` before `battlefield.js` in `src/boot.js`. Refactor `buildBattlefield()` to create only persistent renderer ambience and a `legacyWorldRoot`, preserving it for M02–M40. `SceneBuilder.loadForMission` hides the legacy root for `scene-01`, creates one group, registers every collision record in the handle, and builds fuel tanks, rail siding and static wagons, damaged shed, mud road, shallow canal, bridge, orchard, watch tower, generator, sandbags, distant hills, rain/smoke sprites and bounded fire effects. Its disposer removes group children, unregisters only handle colliders and restores the legacy root. Do not create random buildings or random camps inside `scene-01`.
 
-- [ ] **Step 4: Run focused checks and verify GREEN**
+- [x] **Step 4: Run focused checks and verify GREEN**
 
 Run:
 
@@ -202,7 +202,7 @@ node tests/opening-operation-data-check.mjs
 
 Expected: both print `PASS` and repeated scene cleanup has no duplicate removal.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add src/boot.js src/world/battlefield.js src/scenes/scene-builder.js tests/scene-lifecycle-check.mjs

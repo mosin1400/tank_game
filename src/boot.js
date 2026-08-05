@@ -68,7 +68,7 @@
     return {three:CDNs[0]+'/build/three.module.min.js',addons:CDNs[0]+'/examples/jsm/',label:CDNs[0]};
   }
   var GAME_SCRIPTS=[
-    'src/core/runtime.js','src/render/renderer.js','src/world/battlefield.js',
+    'src/core/runtime.js','src/render/renderer.js','src/scenes/scene-01.js','src/scenes/scene-library.js','src/scenes/scene-builder.js','src/world/battlefield.js',
     'src/combat/effects.js','src/audio/audio.js','src/missions/definitions.js',
     'src/campaign/mission-data.js','src/campaign/campaign-state.js',
     'src/profile/profile-view-model.js','src/profile/profile-store.js','src/profile/profile-ui.js',
