@@ -31,3 +31,11 @@ Assert-True ($profileRaw -match "const PROFILE_STORAGE_KEY='t34war_profiles_v1'"
 Assert-True ($profileRaw -match "localStorage.getItem\('t34war_v2'\)") 'legacy progress migration exists'
 Assert-True ($profileRaw -match 'function saveActiveProfile\(') 'active profile save function exists'
 Assert-True ($bootRaw -match 'src/profile/profile-store.js') 'boot loads profiles before screens'
+
+$profileUiPath = Join-Path $Root 'src/profile/profile-ui.js'
+Assert-True (Test-Path $profileUiPath) 'profile UI module exists'
+$html = Get-Content (Join-Path $Root 'game.html') -Raw
+Assert-True ($html -match 'id="profileSelect"') 'profile screen container exists'
+$profileCssPath = Join-Path $Root 'styles/profile.css'
+Assert-True (Test-Path $profileCssPath) 'profile stylesheet exists'
+Assert-True ((Get-Content $profileCssPath -Raw) -match '--olive-light:\s*#e6ead1') 'profile palette token exists'

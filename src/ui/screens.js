@@ -1,5 +1,5 @@
 /* ================= صفحه‌ها ================= */
-const SCREENS=['menu','missions','brief','over','victory'];
+const SCREENS=['profileSelect','menu','missions','brief','over','victory'];
 function showScreen(id){
   SCREENS.forEach(s=>document.getElementById(s).classList.toggle('on',s===id));
 }
@@ -119,9 +119,7 @@ function toggleMute(){
 // 🔓 رمز تقلب: Ctrl+Shift+Alt+E = باز کردن همه مراحل
 addEventListener('keydown',function(e){
   if(e.ctrlKey&&e.shiftKey&&e.altKey&&(e.key==='e'||e.key==='E')){
-    prog.u=MISSIONS.length;
-    for(var i=0;i<MISSIONS.length;i++) prog.s[i]=Math.max(prog.s[i]||0,3);
-    saveProg();
+    unlockAllMissionsForActiveProfile();
     showMsg('🔓 تمام مراحل باز شد!',2500);
     console.log('🔓 Cheat: all missions unlocked');
   }
@@ -129,8 +127,7 @@ addEventListener('keydown',function(e){
 // 🔒 بازگردانی پیشرفت: Ctrl+Shift+Alt+Q = فقط مأموریت اول باز است
 addEventListener('keydown',function(e){
   if(e.ctrlKey&&e.shiftKey&&e.altKey&&(e.key==='q'||e.key==='Q'||e.code==='KeyQ')){
-    prog={u:1,s:{}};
-    saveProg();
+    resetMissionLocksForActiveProfile();
     showMsg('🔒 پیشرفت بازی به حالت اولیه برگشت!',2500);
     console.log('🔒 Cheat reset: normal mission locks restored');
   }

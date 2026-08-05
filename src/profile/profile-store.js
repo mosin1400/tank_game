@@ -3,7 +3,7 @@ const PROFILE_STORAGE_KEY='t34war_profiles_v1';
 let activeProfile=null,activeProfileSlot=-1;
 
 function createProfile(name){
-  return {version:1,name:String(name||'فرمانده').trim().slice(0,20)||'فرمانده',
+  return {version:1,name:ProfileViewModel.normalizeProfileName(name),
     unlockedIndex:0,completed:{},effects:{},lastMissionId:'M01',stars:0,score:0,
     playSeconds:0,difficulty:'standard',midpointSeen:false};
 }
@@ -78,4 +78,11 @@ function resetActiveProgress(){
   const clean=createProfile(activeProfile.name); profileSlots[activeProfileSlot]=clean;
   loadProfile(activeProfileSlot); saveActiveProfile();
 }
+function unlockAllMissionsForActiveProfile(){
+  if(!activeProfile)return;
+  activeProfile.unlockedIndex=CAMPAIGN_MISSIONS.length-1;
+  CAMPAIGN_MISSIONS.forEach(mission=>{activeProfile.completed[mission.id]={stars:3};});
+  syncLegacyProgress(); saveActiveProfile();
+}
+function resetMissionLocksForActiveProfile(){resetActiveProgress();}
 loadProfile(profileSlots.findIndex(Boolean));

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<meta charset="utf-8">
+<title>Profile UI smoke test</title>
+<body>
+  <div id="profileSelect">
+    <div id="profileSlots"></div>
+    <input id="profileName" maxlength="20">
+    <div id="profileConfirm" hidden>
+      <button id="btnProfileConfirmReplace">تأیید جایگزینی</button>
+      <button id="btnProfileCancelReplace">انصراف</button>
+    </div>
+    <button id="btnProfileContinue">ادامه</button>
+    <button id="btnProfileNew">پروفایل جدید</button>
+    <button id="btnProfileBack">بازگشت</button>
+  </div>
+  <pre id="result">RUNNING</pre>
+  <script>
+    localStorage.removeItem('t34war_profiles_v1');
+    localStorage.removeItem('t34war_v2');
+    const faNum=n=>String(n); let state='menu';
+    let openedScreen='';
+    function showScreen(id){openedScreen=id;}
+    function showMissions(){openedScreen='missions';}
+    function stopMusic(){}
+  </script>
+  <script src="../src/missions/definitions.js"></script>
+  <script src="../src/campaign/mission-data.js"></script>
+  <script src="../src/campaign/campaign-state.js"></script>
+  <script src="../src/profile/profile-store.js"></script>
+  <script src="../src/profile/profile-ui.js"></script>
+  <script>
+    (async()=>{
+      try{
+        initProfileUI(); showProfileSelect();
+        const slots=[...document.querySelectorAll('.profile-slot')];
+        if(slots.length!==3)throw new Error('expected three profile slots');
+        slots[1].click();
+        document.getElementById('profileName').value='آذر'; document.getElementById('btnProfileNew').click();
+        if(listProfiles()[1]?.name!=='آذر')throw new Error('empty slot was not created');
+        renderProfileSlots(); document.querySelector('[data-slot="1"]').click();
+        document.getElementById('profileName').value='سرو'; document.getElementById('btnProfileNew').click();
+        if(document.getElementById('profileConfirm').hidden)throw new Error('used slot replacement was not confirmed');
+        document.getElementById('btnProfileConfirmReplace').click();
+        if(listProfiles()[1]?.name!=='سرو')throw new Error('confirmed replacement did not persist');
+        document.getElementById('btnProfileContinue').click();
+        if(openedScreen!=='missions')throw new Error('continue did not enter campaign');
+        document.getElementById('result').textContent='PASS'; document.getElementById('result').dataset.status='pass';
+      }catch(error){document.getElementById('result').textContent='FAIL: '+error.message;document.getElementById('result').dataset.status='fail';}
+    })();
+  </script>
+</body>
+</html>
