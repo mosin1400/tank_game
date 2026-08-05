@@ -70,7 +70,7 @@
   var GAME_SCRIPTS=[
     'src/core/runtime.js','src/render/renderer.js','src/world/battlefield.js',
     'src/combat/effects.js','src/audio/audio.js','src/missions/definitions.js',
-    'src/campaign/mission-data.js','src/campaign/campaign-state.js',
+    'src/campaign/mission-data.js','src/campaign/campaign-state.js','src/profile/profile-store.js',
     'src/entities/t34.js','src/entities/panzer.js','src/combat/projectiles.js',
     'src/input/controls.js','src/combat/combat.js','src/missions/director.js',
     'src/entities/player.js','src/ui/game-ui.js','src/ui/screens.js','src/main.js'

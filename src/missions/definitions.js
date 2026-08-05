@@ -73,7 +73,10 @@ let MISSIONS=[
 ];
 let prog={u:1,s:{}};
 try{ const j=localStorage.getItem('t34war_v2'); if(j)prog=JSON.parse(j); }catch(e){}
-function saveProg(){ try{ localStorage.setItem('t34war_v2',JSON.stringify(prog)); }catch(e){} }
+function saveProg(){
+  if(typeof saveActiveProfile==='function'){saveActiveProfile();return;}
+  try{ localStorage.setItem('t34war_v2',JSON.stringify(prog)); }catch(e){}
+}
 const mDiff=i=>1+i*0.13;
 function objectiveText(m){
   if(m.t==='assault')return `حمله به کمپین و انهدام ${faNum(m.v)} هدف`;

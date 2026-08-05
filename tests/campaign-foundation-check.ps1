@@ -23,3 +23,11 @@ Assert-True (($screensRaw -match 'MISSIONS.length') -and ($directorRaw -match 'M
 
 $bootRaw = Get-Content (Join-Path $Root 'src/boot.js') -Raw
 Assert-True ($bootRaw -match 'src/campaign/mission-data.js') 'boot loads campaign roster'
+
+$profilePath = Join-Path $Root 'src/profile/profile-store.js'
+Assert-True (Test-Path $profilePath) 'profile store exists'
+$profileRaw = Get-Content $profilePath -Raw
+Assert-True ($profileRaw -match "const PROFILE_STORAGE_KEY='t34war_profiles_v1'") 'versioned profile storage key exists'
+Assert-True ($profileRaw -match "localStorage.getItem\('t34war_v2'\)") 'legacy progress migration exists'
+Assert-True ($profileRaw -match 'function saveActiveProfile\(') 'active profile save function exists'
+Assert-True ($bootRaw -match 'src/profile/profile-store.js') 'boot loads profiles before screens'
