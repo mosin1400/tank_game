@@ -121,6 +121,15 @@ addEventListener('keydown',function(e){
     console.log('🔓 Cheat: all missions unlocked');
   }
 });
+// 🔒 بازگردانی پیشرفت: Ctrl+Shift+Alt+Q = فقط مأموریت اول باز است
+addEventListener('keydown',function(e){
+  if(e.ctrlKey&&e.shiftKey&&e.altKey&&(e.key==='q'||e.key==='Q'||e.code==='KeyQ')){
+    prog={u:1,s:{}};
+    saveProg();
+    showMsg('🔒 پیشرفت بازی به حالت اولیه برگشت!',2500);
+    console.log('🔒 Cheat reset: normal mission locks restored');
+  }
+});
 /* ================= حلقه اصلی ================= */
 function animate(){
   requestAnimationFrame(animate);
