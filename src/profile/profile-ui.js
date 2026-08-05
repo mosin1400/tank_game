@@ -58,13 +58,19 @@ function showProfileSelect(){
   showScreen('profileSelect'); renderProfileSlots(); selectProfileSlot(selectedProfileSlot);
 }
 function initProfileUI(){
-  if(profileUiReady)return; profileUiReady=true;
-  document.getElementById('btnProfileContinue').addEventListener('click',continueSelectedProfile);
-  document.getElementById('btnProfileNew').addEventListener('click',createSelectedProfile);
-  document.getElementById('btnProfileConfirmReplace').addEventListener('click',confirmProfileReplacement);
-  document.getElementById('btnProfileCancelReplace').addEventListener('click',()=>{
+  if(profileUiReady)return true;
+  const ids=['btnProfileContinue','btnProfileNew','btnProfileConfirmReplace','btnProfileCancelReplace','btnProfileBack','btnProfiles'];
+  const elements=ids.map(id=>document.getElementById(id));
+  if(elements.some(element=>!element)){console.warn('رابط پروفایل در HTML بارگذاری‌شده وجود ندارد.');return false;}
+  profileUiReady=true;
+  const [continueButton,newButton,confirmButton,cancelButton,backButton,profilesButton]=elements;
+  continueButton.addEventListener('click',continueSelectedProfile);
+  newButton.addEventListener('click',createSelectedProfile);
+  confirmButton.addEventListener('click',confirmProfileReplacement);
+  cancelButton.addEventListener('click',()=>{
     pendingReplacementSlot=-1; document.getElementById('profileConfirm').hidden=true;
   });
-  document.getElementById('btnProfileBack').addEventListener('click',showMenu);
-  document.getElementById('btnProfiles').addEventListener('click',showProfileSelect);
+  backButton.addEventListener('click',showMenu);
+  profilesButton.addEventListener('click',showProfileSelect);
+  return true;
 }

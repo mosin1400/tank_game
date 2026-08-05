@@ -73,7 +73,8 @@ try{
   initFXPools(); initBullets(); initPUTex();
 
   step('سلاح‌ها و سامانه ماموریت‌ها…',92); await frame();
-  initDom(); buildWeaponSlots(); showProfileSelect();
+  const campaignUiReady=initDom(); buildWeaponSlots();
+  if(campaignUiReady)showProfileSelect(); else showMenu();
 
   step('آماده نبرد!',100);
   animate();

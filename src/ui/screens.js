@@ -1,7 +1,10 @@
 /* ================= صفحه‌ها ================= */
 const SCREENS=['profileSelect','menu','missions','brief','over','victory'];
 function showScreen(id){
-  SCREENS.forEach(s=>document.getElementById(s).classList.toggle('on',s===id));
+  SCREENS.forEach(s=>{
+    const screen=document.getElementById(s);
+    if(screen)screen.classList.toggle('on',s===id);
+  });
 }
 function totalStars(){
   let n=0; for(let i=0;i<MISSIONS.length;i++)n+=prog.s[i]||0; return n;
@@ -10,14 +13,19 @@ function showMenu(){
   state='menu'; paused=false; document.body.dataset.state='menu';
   stopMusic();
   document.body.classList.remove('paused');
-  document.getElementById('menuStars').textContent=`مجموع ستاره‌ها: ${faNum(totalStars())} از ${faNum(MISSIONS.length*3)}`;
+  const menuStars=document.getElementById('menuStars');
+  if(menuStars)menuStars.textContent=`مجموع ستاره‌ها: ${faNum(totalStars())} از ${faNum(MISSIONS.length*3)}`;
   showScreen('menu');
 }
 function showMissions(){
   state='menu'; document.body.dataset.state='menu';
-  document.getElementById('listStars').textContent=
+  const listStars=document.getElementById('listStars');
+  if(listStars)listStars.textContent=
     `ستاره‌ها: ${faNum(totalStars())} از ${faNum(MISSIONS.length*3)} · ماموریت‌های باز: ${faNum(prog.u)} از ${faNum(MISSIONS.length)}`;
-  renderCampaignMap();
+  if(!listStars||!renderCampaignMap()){
+    console.warn('نقشهٔ کمپین در صفحهٔ بارگذاری‌شده موجود نیست.');
+    showMenu(); return;
+  }
   showScreen('missions');
 }
 let briefIdx=0;

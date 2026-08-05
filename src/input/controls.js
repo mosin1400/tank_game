@@ -90,7 +90,7 @@ function initDom(){
   btnMG.addEventListener('pointerdown',e=>{e.stopPropagation();btnMGDown=true;mgHeld=true;});
   btnMG.addEventListener('pointerup',e=>{e.stopPropagation();btnMGDown=false;mgHeld=false;});
 
-  initProfileUI(); initCampaignMapUI();
+  const profileUiAvailable=initProfileUI(),campaignMapAvailable=initCampaignMapUI();
   document.getElementById('btnMissions').addEventListener('click',showMissions);
   document.getElementById('btnBackMenu').addEventListener('click',showMenu);
   document.getElementById('btnBackList').addEventListener('click',showMissions);
@@ -111,6 +111,7 @@ function initDom(){
     renderer.setSize(innerWidth,innerHeight);
     if(composer)composer.setSize(innerWidth,innerHeight);
   });
+  return profileUiAvailable&&campaignMapAvailable;
 }
 function resolveCollisions(pos,r,isPlayer,selfE){
   const pushC=(cx,cz,cr)=>{
