@@ -1790,6 +1790,7 @@ function pickTypeFor(idx){
   return 'medium';
 }
 function spawnEnemy(typeKey,opts={}){
+  if(!curMission||curMission.done||state!=='play')return null;
   const tk=typeKey||pickTypeFor(curMission?curMission.idx:0);
   const cfg=ETYPES[tk];
   const diff=opts.diff||1;
@@ -1824,7 +1825,6 @@ function spawnEnemy(typeKey,opts={}){
   rebuilt.root.position.copy(e.root.position);
   rebuilt.root.rotation.copy(e.root.rotation);
   rebuilt.root.scale.copy(e.root.scale);
-  rebuilt.hpBg=e.hpBg; rebuilt.hpFill=e.hpFill; rebuilt.root.add(e.hpBg); rebuilt.root.add(e.hpFill);
   Object.assign(e,rebuilt);
   scene.add(e.root);
   e.mgLeft=0; e.mgT=0;
@@ -1843,6 +1843,7 @@ function spawnEnemy(typeKey,opts={}){
     document.getElementById('bossname').textContent=opts.name||'ببر آهنی';
     document.getElementById('bossbar').classList.add('on');
   }
+  return e;
 }
 function updateEnemies(dt,t){
   if(curMission&&curMission.done)return;
