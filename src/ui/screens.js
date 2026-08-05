@@ -4,19 +4,19 @@ function showScreen(id){
   SCREENS.forEach(s=>document.getElementById(s).classList.toggle('on',s===id));
 }
 function totalStars(){
-  let n=0; for(let i=0;i<20;i++)n+=prog.s[i]||0; return n;
+  let n=0; for(let i=0;i<MISSIONS.length;i++)n+=prog.s[i]||0; return n;
 }
 function showMenu(){
   state='menu'; paused=false; document.body.dataset.state='menu';
   stopMusic();
   document.body.classList.remove('paused');
-  document.getElementById('menuStars').textContent=`مجموع ستاره‌ها: ${faNum(totalStars)} از ${faNum(60)}`;
+  document.getElementById('menuStars').textContent=`مجموع ستاره‌ها: ${faNum(totalStars())} از ${faNum(MISSIONS.length*3)}`;
   showScreen('menu');
 }
 function showMissions(){
   state='menu'; document.body.dataset.state='menu';
   document.getElementById('listStars').textContent=
-    `ستاره‌ها: ${faNum(totalStars)} از ${faNum(60)} · ماموریت‌های باز: ${faNum(prog.u)} از ${faNum(20)}`;
+    `ستاره‌ها: ${faNum(totalStars())} از ${faNum(MISSIONS.length*3)} · ماموریت‌های باز: ${faNum(prog.u)} از ${faNum(MISSIONS.length)}`;
   const grid=document.getElementById('missionGrid');
   grid.innerHTML='';
   MISSIONS.forEach((m,i)=>{
@@ -44,7 +44,7 @@ function showBrief(i){
   briefIdx=i;
   const m=MISSIONS[i];
   document.getElementById('briefCamp').textContent=
-    `کمپین ${faNum(m.c)} — ${CAMPS[m.c-1]} · ماموریت ${faNum(i+1)} از ${faNum(20)}`;
+    `کمپین ${faNum(m.c)} — ${CAMPS[m.c-1]} · ماموریت ${faNum(i+1)} از ${faNum(MISSIONS.length)}`;
   document.getElementById('briefName').textContent=m.n;
   document.getElementById('briefDesc').textContent=m.d;
   document.getElementById('briefObj').textContent='هدف: '+objectiveText(m);
@@ -119,8 +119,8 @@ function toggleMute(){
 // 🔓 رمز تقلب: Ctrl+Shift+Alt+E = باز کردن همه مراحل
 addEventListener('keydown',function(e){
   if(e.ctrlKey&&e.shiftKey&&e.altKey&&(e.key==='e'||e.key==='E')){
-    prog.u=20;
-    for(var i=0;i<20;i++) prog.s[i]=Math.max(prog.s[i]||0,3);
+    prog.u=MISSIONS.length;
+    for(var i=0;i<MISSIONS.length;i++) prog.s[i]=Math.max(prog.s[i]||0,3);
     saveProg();
     showMsg('🔓 تمام مراحل باز شد!',2500);
     console.log('🔓 Cheat: all missions unlocked');

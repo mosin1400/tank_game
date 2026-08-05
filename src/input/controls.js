@@ -94,7 +94,7 @@ function initDom(){
   document.getElementById('btnBackMenu').addEventListener('click',showMenu);
   document.getElementById('btnBackList').addEventListener('click',showMissions);
   document.getElementById('btnLaunch').addEventListener('click',()=>{initAudio();startEngine();startMission(briefIdx);});
-  document.getElementById('btnNext').addEventListener('click',()=>startMission(Math.min(19,curMission.idx+1)));
+  document.getElementById('btnNext').addEventListener('click',()=>startMission(Math.min(MISSIONS.length-1,curMission.idx+1)));
   document.getElementById('btnVicList').addEventListener('click',showMissions);
   document.getElementById('btnRetry').addEventListener('click',()=>startMission(curMission.idx));
   document.getElementById('btnOvList').addEventListener('click',showMissions);

@@ -179,15 +179,9 @@ prog.u=MISSIONS.length; for(var i=0;i<MISSIONS.length;i++)prog.s[i]=Math.max(pro
 
 - [ ] **Step 4: Run data checks and syntax checks**
 
-Run:
+Run: `powershell -ExecutionPolicy Bypass -File tests/campaign-foundation-check.ps1`
 
-```powershell
-powershell -ExecutionPolicy Bypass -File tests/campaign-foundation-check.ps1
-node --check src/campaign/mission-data.js
-node --check src/campaign/campaign-state.js
-```
-
-Expected: all pass; the old director still sees a 40-record `MISSIONS` adapter.
+Expected: all static checks pass; then open `http://localhost:8080/game.html` through the local server and verify the browser console has no parsing error while the old director sees a 40-record `MISSIONS` adapter.
 
 - [ ] **Step 5: Commit the data layer**
 

@@ -46,9 +46,9 @@ function refreshWeaponSlots(){
     w.el.classList.toggle('locked',!weaponUnlocked(i));
   });
 }
-const CAMPS=['پیشروی در دشت','شهر سوخته','ضدحمله','سقوط قلعه'];
+let CAMPS=['پیشروی در دشت','شهر سوخته','ضدحمله','سقوط قلعه'];
 const TLABEL={destroy:'انهدام',survive:'بقا',waves:'دفع موج',boss:'باس',assault:'حمله به کمپین'};
-const MISSIONS=[
+let MISSIONS=[
 
  {n:'نخستین برخورد',d:'گشت زرهی دشمن در دشت دیده شده است. آن‌ها را منهدم کن.',t:'destroy',v:2,p:'day',c:1},
  {n:'پاکسازی دشت',d:'منطقه را از زره‌پوش‌های دشمن پاک کن.',t:'destroy',v:9,p:'day',c:1},

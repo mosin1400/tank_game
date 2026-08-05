@@ -295,7 +295,7 @@ function openVictory(){
   state='menu'; document.body.dataset.state='menu';
   const M=curMission;
   const stars=player.hp>=70?3:(player.hp>=35?2:1);
-  prog.u=Math.max(prog.u,Math.min(20,M.idx+2));
+  prog.u=Math.max(prog.u,Math.min(MISSIONS.length,M.idx+2));
   prog.s[M.idx]=Math.max(prog.s[M.idx]||0,stars);
   saveProg();
   score+=500*(M.idx+1);
@@ -308,9 +308,9 @@ function openVictory(){
   });
   const unlockedNow=WEAPONS.find(w=>w.unlock===M.idx+1);
   document.getElementById('vicNote').textContent=
-    M.idx===19?'تمام ماموریت‌ها فتح شد! تو افسانه جنگ زرهی هستی.':
+    M.idx===MISSIONS.length-1?'تمام ماموریت‌ها فتح شد! تو افسانه جنگ زرهی هستی.':
     (unlockedNow?`سلاح جدید آزاد شد: ${unlockedNow.name}`:'');
-  document.getElementById('btnNext').style.display=M.idx<19?'':'none';
+  document.getElementById('btnNext').style.display=M.idx<MISSIONS.length-1?'':'none';
   buildWeaponSlots();
   showScreen('victory');
 }
