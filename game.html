@@ -316,7 +316,7 @@
 <div id="menu" class="overlay">
   <div class="card panel">
     <h1>تی-۳۴<em>/۸۵</em></h1>
-    <div class="tag">نبرد زرهی حرفه‌ای · ۲۰ ماموریت · ۴ سلاح</div>
+    <div class="tag">نبرد زرهی حرفه‌ای</div>
     <div class="desc">از دشت‌های شرقی تا قلعه نهایی؛ چهار کمپین، بیست میدان نبرد.
       سلاح‌های جدید را با فتح ماموریت‌ها آزاد کن.</div>
     <div class="ctrls">
@@ -402,7 +402,6 @@
   <div class="ld-bar"><div id="ldFill"></div></div>
   <div class="ld-s" id="ldStep">آماده‌سازی…</div>
   <div id="errbox"></div>
-  <button id="btnOffline" style="margin-top:16px;font-family:inherit;font-size:13px;font-weight:700;color:#161a0e;background:linear-gradient(180deg,#bcc87e,#94a256);border:none;border-radius:10px;padding:10px 22px;cursor:pointer;">📦 دانلود کتابخانه‌ها برای استفاده آفلاین</button>
 <div id="offMsg" style="margin-top:8px;font-size:11px;color:#9aa17c;"></div>
 </div>
 <div id="errToast"></div>
@@ -507,75 +506,6 @@
       }
     },45000);
   }
-    /* ─── بسته آفلاین: دانلود + ZIP ─── */
-  var OFF_FILES=[
-    'build/three.module.min.js',
-    'examples/jsm/utils/BufferGeometryUtils.js',
-    'examples/jsm/environments/RoomEnvironment.js',
-    'examples/jsm/postprocessing/EffectComposer.js',
-    'examples/jsm/postprocessing/RenderPass.js',
-    'examples/jsm/postprocessing/ShaderPass.js',
-    'examples/jsm/postprocessing/Pass.js',
-    'examples/jsm/postprocessing/MaskPass.js',
-    'examples/jsm/shaders/CopyShader.js',
-    'examples/jsm/shaders/LuminosityHighPassShader.js'
-  ];
-  var CRC_T=(function(){var t=new Uint32Array(256);for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}return t;})();
-  function crc32(u8){var c=0xFFFFFFFF;for(var i=0;i<u8.length;i++)c=CRC_T[(c^u8[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
-  function buildZip(files){
-    var te=new TextEncoder(),parts=[],cd=[],off=0;
-    function u16(n){return [n&255,(n>>8)&255];}
-    function u32(n){return [n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255];}
-    var DATE=22561;
-    files.forEach(function(f){
-      var name=te.encode(f.name),data=f.data,crc=crc32(data);
-      var lh=[].concat(u32(0x04034b50),u16(20),u16(0x0800),u16(0),u16(0),u16(DATE),
-        u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0));
-      parts.push(new Uint8Array(lh),name,data);
-      cd.push(new Uint8Array([].concat(u32(0x02014b50),u16(20),u16(20),u16(0x0800),u16(0),u16(0),u16(DATE),
-        u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(off))));
-      cd.push(name);
-      off+=lh.length+name.length+data.length;
-    });
-    var cdSize=0; cd.forEach(function(p){cdSize+=p.length;});
-    var eocd=new Uint8Array([].concat(u32(0x06054b50),u16(0),u16(0),u16(files.length),u16(files.length),u32(cdSize),u32(off),u16(0)));
-    var buf=new Uint8Array(off+cdSize+eocd.length),o=0;
-    parts.concat(cd,[eocd]).forEach(function(p){buf.set(p,o);o+=p.length;});
-    return buf;
-  }
-  var README_OFF='راهنمای نسخه آفلاین\n=====================\n1) این زیپ را کنار فایل HTML بازی استخراج کن (پوشه three کنار فایل بازی قرار بگیرد).\n2) نام فایل بازی را game.html بگذار.\n3) فایل server.bat را اجرا کن (نیاز به Python دارد).\n   بدون Python در ترمینال همان پوشه بنویس:\n   python -m http.server 8080\n   و در مرورگر باز کن: http://localhost:8080/game.html\n\nنکته: مرورگرها اجازه اجرای ماژول از file:// را نمی‌دهند؛ حتماً از سرور محلی استفاده کن.\n';
-  var BAT_OFF='@echo off\r\ncd /d "%~dp0"\r\nstart "T34 Server" /min python -m http.server 8080\r\ntimeout /t 2 /nobreak >nul\r\nstart "" "http://localhost:8080/game.html"\r\n';
-  async function downloadOffline(){
-    var msg=document.getElementById('offMsg');
-    try{
-      var base=null;
-      for(var i=0;i<CDNs.length;i++){
-        msg.textContent='بررسی سرور '+(i+1)+'…';
-        if(await probe(CDNs[i]+'/build/three.module.min.js')){base=CDNs[i];break;}
-      }
-      if(!base)base=CDNs[0];
-      var files=[],te=new TextEncoder();
-      for(var j=0;j<OFF_FILES.length;j++){
-        var p=OFF_FILES[j];
-        msg.textContent='دانلود '+(j+1)+' از '+OFF_FILES.length+': '+p;
-        var r=await fetch(base+'/'+p);
-        if(!r.ok)throw new Error('HTTP '+r.status+' برای '+p);
-        files.push({name:'three/'+p,data:new Uint8Array(await r.arrayBuffer())});
-      }
-      files.push({name:'راهنما-آفلاین.txt',data:te.encode(README_OFF)});
-      files.push({name:'server.bat',data:te.encode(BAT_OFF)});
-      msg.textContent='در حال ساخت زیپ…';
-      var zip=buildZip(files);
-      var a=document.createElement('a');
-      a.href=URL.createObjectURL(new Blob([zip],{type:'application/zip'}));
-      a.download='t34-offline.zip'; a.click();
-      setTimeout(function(){URL.revokeObjectURL(a.href);},8000);
-      msg.textContent='✅ دانلود شد! زیپ را کنار فایل بازی استخراج کن و راهنما را بخوان.';
-    }catch(e){
-      msg.textContent='⚠ خطا در دانلود: '+((e&&e.message)||e);
-    }
-  }
-
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
 })();
@@ -600,7 +530,8 @@ let renderer=null,scene=null,camera=null,composer=null,hemi=null,sun=null,fxLigh
 let maxAniso=4;
 let texOlive,texCast,texRust,texGray,texGround,texWall,texSky,texSmoke,texGlow;
 let matOlive,matCast,matRust,matGray,matGrayL,matGrayH,matDark,matChar,matRoof,
-    matTrunk,matLeaf,matRock,matHill,matBag,matShellP,matShellE,matRocket,matMG;
+    matTrunk,matLeaf,matRock,matHill,matBag,matShellP,matShellE,matRocket,matMG,
+    matPz1,matPz2,matPz3,matPz4;
 let skyMat=null,ground=null,flare=null;
 let moteGeo=null,motePos=null,motes=null;
 const MOTE_N=240,FIRE_N=isCoarse?220:360;
@@ -836,6 +767,10 @@ function makeMaterials(){
   matGray=mat({map:texGray,bumpMap:texGray,bumpScale:0.05,roughness:0.8,metalness:0.18});
   matGrayL=mat({map:texGray,color:0xc6c6ba,roughness:0.78,metalness:0.2});
   matGrayH=mat({map:texGray,color:0x87877e,roughness:0.82,metalness:0.22});
+  matPz1=mat({map:texGray,color:0xc9c0a6,roughness:0.82,metalness:0.18});
+  matPz2=mat({map:texGray,color:0x8a8666,roughness:0.84,metalness:0.20});
+  matPz3=mat({map:texGray,color:0x55574a,roughness:0.86,metalness:0.22});
+  matPz4=mat({map:texGray,color:0x3a3832,roughness:0.88,metalness:0.26});
   matDark=mat({color:0x2b2d26,roughness:0.9,metalness:0.15});
   matChar=mat({color:0x272219,roughness:0.97,metalness:0.05});
   matRoof=mat({color:0x4a463c,roughness:0.95});
@@ -1279,8 +1214,9 @@ function refreshWeaponSlots(){
   });
 }
 const CAMPS=['پیشروی در دشت','شهر سوخته','ضدحمله','سقوط قلعه'];
-const TLABEL={destroy:'انهدام',survive:'بقا',waves:'دفع موج',boss:'باس'};
+const TLABEL={destroy:'انهدام',survive:'بقا',waves:'دفع موج',boss:'باس',assault:'حمله به کمپین'};
 const MISSIONS=[
+
  {n:'نخستین برخورد',d:'گشت زرهی دشمن در دشت دیده شده است. آن‌ها را منهدم کن.',t:'destroy',v:2,p:'day',c:1},
  {n:'پاکسازی دشت',d:'منطقه را از زره‌پوش‌های دشمن پاک کن.',t:'destroy',v:9,p:'day',c:1},
  {n:'شکارچی تانک',d:'دشمن نیروی بیشتری فرستاده است. پاداش فتح: توپ ۵۷ میلی‌متری.',t:'destroy',v:4,p:'day',c:1},
@@ -1288,10 +1224,10 @@ const MISSIONS=[
  {n:'غول آهنی',d:'یک تانک سنگین فرماندهی ظاهر شده است. نابودش کن!',t:'boss',v:1,p:'day',c:1,bossHp:650},
  {n:'ورود به شهر',d:'دشمن در شهر سوخته سنگر گرفته است.',t:'destroy',v:10,p:'dusk',c:2},
  {n:'آتش در خیابان',d:'موج‌های دشمن را از خیابان‌ها بیرون بران. پاداش فتح: هویتزر ۱۲۲.',t:'waves',v:4,p:'dusk',c:2},
- {n:'کمین در غروب',d:'دشمن سبک‌تر و سریع‌تر شده است. مراقب پهلوها باش.',t:'destroy',v:14,p:'dusk',c:2},
+ {n:'کمین در غروب',d:'به کمپین دشمن حمله کن و تانک‌های پارک‌شده را نابود کن.',t:'assault',v:6,p:'dusk',c:2},
  {n:'مقاومت پل',d:'پل را تا رسیدن نیروی کمکی نگه دار.',t:'survive',v:100,p:'dusk',c:2},
  {n:'رئیس شهر',d:'فرمانده زرهی شهر را پیدا و منهدم کن.',t:'boss',v:1,p:'dusk',c:2,bossHp:900},
- {n:'شکست محاصره',d:'حلقه محاصره را با آتش توپ بشکن.',t:'destroy',v:14,p:'dawn',c:3},
+ {n:'نفوذ به کمپین',d:'کمپین اصلی دشمن در دوردست! به آن برس و منهدمش کن.',t:'assault',v:8,p:'dawn',c:3},
  {n:'طوفان آتش',d:'پنج موج پیاپی! پاداش فتح: راکت‌انداز کاتیوشا.',t:'waves',v:5,p:'dawn',c:3},
  {n:'زره در برابر زره',d:'تانک‌های سنگین دشمن در راه‌اند.',t:'destroy',v:16,p:'dawn',c:3},
  {n:'خط آتش',d:'تا آخرین نفس در خط آتش بمان.',t:'survive',v:120,p:'dawn',c:3},
@@ -1307,6 +1243,7 @@ try{ const j=localStorage.getItem('t34war_v2'); if(j)prog=JSON.parse(j); }catch(
 function saveProg(){ try{ localStorage.setItem('t34war_v2',JSON.stringify(prog)); }catch(e){} }
 const mDiff=i=>1+i*0.13;
 function objectiveText(m){
+  if(m.t==='assault')return `حمله به کمپین و انهدام ${faNum(m.v)} هدف`;
   if(m.t==='destroy')return `انهدام ${faNum(m.v)} تانک دشمن`;
   if(m.t==='survive')return `بقا به مدت ${faNum(m.v)} ثانیه`;
   if(m.t==='waves')return `دفع ${faNum(m.v)} موج دشمن`;
@@ -1445,10 +1382,6 @@ const ETYPES={
   boss:{hp:650,spd:[2.8,3.2],dmg:20,cd:[3.2,4.2],scale:1.38,stop:[32,40],score:1000,name:'ببر آهنی',tSpd:1.0},
 };
 /* ۴ متریال برای ۴ کمپین: خاکی → زیتونی → تیره → مشکی */
-const matPz1=mat({map:texGray,color:0xc9c0a6,roughness:0.82,metalness:0.18});
-const matPz2=mat({map:texGray,color:0x8a8666,roughness:0.84,metalness:0.20});
-const matPz3=mat({map:texGray,color:0x55574a,roughness:0.86,metalness:0.22});
-const matPz4=mat({map:texGray,color:0x3a3832,roughness:0.88,metalness:0.26});
 function buildPanzer(typeKey,variant){
   const heavy=(typeKey==='heavy'||typeKey==='boss');
   const light=(typeKey==='light');
@@ -1828,6 +1761,7 @@ function killEnemy(e){
       missionVictory();
     }    
     if(curMission.t==='boss'&&isBoss)missionVictory();
+    if(curMission.t==='assault'&&curMission.kills>=curMission.total)missionVictory();
   }
 }
 function damagePlayer(d){
@@ -1879,6 +1813,7 @@ function spawnEnemy(typeKey,opts={}){
   if(e.type==='heavy') e.speed*=rand(0.8,0.95);
   e.stopRange=rand(cfg.stop[0],cfg.stop[1]);
   e.wander=rand(0,6.28); e.dead=false;
+  e.stationary=!!opts.stationary;
   e.radius=2.3*cfg.scale*(opts.scale||1);
   e.flank=Math.random()<0.5?1:-1;
     const camp=(curMission?curMission.def.c:1);
@@ -2103,6 +2038,14 @@ function updateDirector(dt){
     if(enemies.length<M.minE&&M.spawnT<=0){
       spawnEnemy(pickTypeFor(M.idx),{diff:M.diff});
       M.spawnT=clamp(2.2-M.idx*0.05,1.2,2.2);
+    }
+  }else if(M.t==='assault'){
+    if(M.spawned<M.total){
+      M.spawnT-=dt;
+      if(M.spawnT<=0&&enemies.length<M.maxAlive){
+        spawnEnemy(pickTypeFor(M.idx),{diff:M.diff,stationary:Math.random()<0.5});
+        M.spawned++; M.spawnT=M.spawnInt;
+      }
     }
   }else if(M.t==='boss'){
     if(!M.bossSpawned){
@@ -2485,6 +2428,36 @@ function updateHUD(){
   else buffPowerEl.classList.remove('on');
   if(bossRef&&!bossRef.dead)
     bossFillEl.style.width=(clamp(bossRef.hp/bossRef.maxHp,0,1)*100)+'%';
+    /* نشانگر هدف: جهت و فاصله تا نزدیک‌ترین دشمن یا کمپین */
+  const marker=document.getElementById('marker'),
+        arrow=document.getElementById('markerArrow'),
+        mdist=document.getElementById('markerDist');
+  let target=null,minD=Infinity;
+  for(const e of enemies){
+    const d=Math.hypot(e.root.position.x-player.pos.x,e.root.position.z-player.pos.z);
+    if(d<minD){minD=d;target=e.root.position;}
+  }
+  if(!target&&enemyCamps.length){
+    for(const c of enemyCamps){
+      const d=Math.hypot(c.x-player.pos.x,c.z-player.pos.z);
+      if(d<minD){minD=d;target={x:c.x,y:0,z:c.z};}
+    }
+  }
+  if(target&&minD>25){
+    marker.style.display='block';
+    const dx=target.x-player.pos.x,dz=target.z-player.pos.z;
+    const ang=Math.atan2(dx,dz)-player.yaw;
+    arrow.setAttribute('transform',`rotate(${-ang*180/Math.PI} 40 40)`);
+    mdist.textContent=faNum(Math.round(minD))+' م';
+    /* موقعیت فلش در لبه صفحه بر اساس زاویه */
+    const screenAng=-ang;
+    const rx=Math.sin(screenAng),ry=-Math.cos(screenAng);
+    const edge=Math.min(innerWidth,innerHeight)*0.42;
+    marker.style.left=(innerWidth/2+rx*edge)+'px';
+    marker.style.top=(innerHeight/2+ry*edge)+'px';
+  }else{
+    marker.style.display='none';
+  }
 }
 
 /* ================= صفحه‌ها ================= */
