@@ -8,6 +8,7 @@ function totalStars(){
 }
 function showMenu(){
   state='menu'; paused=false; document.body.dataset.state='menu';
+  stopMusic();
   document.body.classList.remove('paused');
   document.getElementById('menuStars').textContent=`مجموع ستاره‌ها: ${faNum(totalStars)} از ${faNum(60)}`;
   showScreen('menu');
@@ -80,6 +81,7 @@ function clearWorld(){
   for(const tr of trees){tr.alive=true;tr.root.visible=true;}
 }
 function startMission(i){
+  startMusic(i);
   clearWorld();
   curMission=makeMission(i);
   applyPalette(MISSIONS[i].p);
@@ -105,10 +107,13 @@ function startMission(i){
 function togglePause(){
   if(state!=='play')return;
   paused=!paused;
+  setMusicPaused(paused);
   document.body.classList.toggle('paused',paused);
 }
 function toggleMute(){
   muted=!muted;
+  syncMusicMute();
+  if(!muted&&curMission)startMusic(curMission.idx);
   document.getElementById('btnMute').textContent=muted?'🔇':'🔊';
 }
 // 🔓 رمز تقلب: Ctrl+Shift+Alt+E = باز کردن همه مراحل

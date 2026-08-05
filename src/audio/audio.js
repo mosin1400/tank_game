@@ -1,6 +1,37 @@
 /* ================= صدا ================= */
 let actx=null,master=null,muted=false,noiseB=null;
 let engO=null,engO2=null,engG=null,engF=null;
+const MUSIC_TRACKS=[
+  'assets/audio/Iron_On_The_Horizon.mp3',
+  'assets/audio/Iron_Perimeter.mp3',
+  'assets/audio/Pivot_and_Aim.mp3',
+  'assets/audio/The_Last_Stride.mp3',
+  'assets/audio/Treads_Against_the_Sky.mp3',
+];
+let musicPlayer=null,musicTrack=-1;
+function startMusic(missionIndex=0){
+  if(muted)return;
+  const track=Math.floor(Math.max(0,missionIndex)/4)%MUSIC_TRACKS.length;
+  if(musicPlayer&&musicTrack===track){
+    musicPlayer.muted=false;
+    musicPlayer.play().catch(()=>{});
+    return;
+  }
+  if(musicPlayer){musicPlayer.pause();musicPlayer.removeAttribute('src');}
+  musicTrack=track;
+  musicPlayer=new Audio(MUSIC_TRACKS[track]);
+  musicPlayer.loop=true; musicPlayer.preload='auto'; musicPlayer.volume=0.18;
+  musicPlayer.play().catch(()=>{});
+}
+function syncMusicMute(){if(musicPlayer)musicPlayer.muted=muted;}
+function setMusicPaused(paused){
+  if(!musicPlayer||muted)return;
+  if(paused)musicPlayer.pause(); else musicPlayer.play().catch(()=>{});
+}
+function stopMusic(){
+  if(!musicPlayer)return;
+  musicPlayer.pause(); musicPlayer.currentTime=0;
+}
 function initAudio(){
   if(actx){actx.resume&&actx.resume();return;}
   try{
