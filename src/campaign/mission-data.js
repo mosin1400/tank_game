@@ -47,5 +47,6 @@ const CAMPAIGN_MISSIONS=Object.freeze([
   campaignMission('M40',4,'خط آهن آخر','وارن می‌گریزد و باید آب و خط آهن دوباره امن شوند.',{kind:'boss',value:1,label:'تانک وارن و دریچه اصلی را متوقف کن'},{kind:'protect',value:1,label:'قطار تعمیر از پل بگذرد'},['heavy','medium'],'none','scene-40','dawn','dawn',{t:'boss',v:1,c:4,bossHp:2200,bossName:'وارن، فرمانده خاکستر'},null,{stars:3,label:'خط آهن آخر'})
 ]);
 CAMPS=['مرز خاکستر','رود آهن','کوهستان خاموش','راه آخر'];
-MISSIONS=CAMPAIGN_MISSIONS.map(m=>({n:m.title,d:m.briefing,t:m.runtime.t,v:m.runtime.v,p:m.palette,c:m.act,bossName:m.runtime.bossName,bossHp:m.runtime.bossHp}));
+/* کنترل‌کنندهٔ اختصاصی M01 در تحویل بعد جای این مسیر سازگار را می‌گیرد. */
+MISSIONS=CAMPAIGN_MISSIONS.map(m=>({n:m.title,d:m.briefing,t:m.runtime.operation?'survive':m.runtime.t,v:m.runtime.v,p:m.palette,c:m.act,bossName:m.runtime.bossName,bossHp:m.runtime.bossHp}));
 function getCampaignMission(id){return CAMPAIGN_MISSIONS.find(m=>m.id===id)||null;}
