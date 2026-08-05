@@ -1,5 +1,5 @@
 /* ================= صفحه‌ها ================= */
-const SCREENS=['profileSelect','menu','missions','brief','over','victory'];
+const SCREENS=['profileSelect','missions','brief','over','victory'];
 function showScreen(id){
   SCREENS.forEach(s=>{
     const screen=document.getElementById(s);
@@ -9,24 +9,19 @@ function showScreen(id){
 function totalStars(){
   let n=0; for(let i=0;i<MISSIONS.length;i++)n+=prog.s[i]||0; return n;
 }
-function showMenu(){
+function showCampaignMap(){
   state='menu'; paused=false; document.body.dataset.state='menu';
   stopMusic();
   document.body.classList.remove('paused');
-  const menuStars=document.getElementById('menuStars');
-  if(menuStars)menuStars.textContent=`مجموع ستاره‌ها: ${faNum(totalStars())} از ${faNum(MISSIONS.length*3)}`;
-  showScreen('menu');
-}
-function showMissions(){
-  state='menu'; document.body.dataset.state='menu';
   const listStars=document.getElementById('listStars');
   if(listStars)listStars.textContent=
     `ستاره‌ها: ${faNum(totalStars())} از ${faNum(MISSIONS.length*3)} · ماموریت‌های باز: ${faNum(prog.u)} از ${faNum(MISSIONS.length)}`;
   if(!listStars||!renderCampaignMap()){
     console.warn('نقشهٔ کمپین در صفحهٔ بارگذاری‌شده موجود نیست.');
-    showMenu(); return;
+    return false;
   }
   showScreen('missions');
+  return true;
 }
 let briefIdx=0;
 function showBrief(i){

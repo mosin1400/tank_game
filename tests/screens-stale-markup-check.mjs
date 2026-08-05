@@ -9,7 +9,7 @@ const context=vm.createContext({
   renderCampaignMap:()=>false,addEventListener:()=>{},console,
   state:'menu',paused:false
 });
-vm.runInContext(`${source};globalThis.ScreenMarkupTest={showScreen,showMissions};`,context);
+vm.runInContext(`${source};globalThis.ScreenMarkupTest={showScreen,showCampaignMap};`,context);
 context.ScreenMarkupTest.showScreen('menu');
-context.ScreenMarkupTest.showMissions();
+context.ScreenMarkupTest.showCampaignMap();
 console.log('PASS: screens tolerate stale campaign markup');

@@ -50,7 +50,7 @@ function confirmProfileReplacement(){
 }
 function continueSelectedProfile(){
   if(!loadProfile(selectedProfileSlot))return;
-  showMissions();
+  showCampaignMap();
 }
 function showProfileSelect(){
   state='menu'; document.body.dataset.state='menu'; stopMusic();
@@ -59,18 +59,16 @@ function showProfileSelect(){
 }
 function initProfileUI(){
   if(profileUiReady)return true;
-  const ids=['btnProfileContinue','btnProfileNew','btnProfileConfirmReplace','btnProfileCancelReplace','btnProfileBack','btnProfiles'];
+  const ids=['btnProfileContinue','btnProfileNew','btnProfileConfirmReplace','btnProfileCancelReplace'];
   const elements=ids.map(id=>document.getElementById(id));
   if(elements.some(element=>!element)){console.warn('رابط پروفایل در HTML بارگذاری‌شده وجود ندارد.');return false;}
   profileUiReady=true;
-  const [continueButton,newButton,confirmButton,cancelButton,backButton,profilesButton]=elements;
+  const [continueButton,newButton,confirmButton,cancelButton]=elements;
   continueButton.addEventListener('click',continueSelectedProfile);
   newButton.addEventListener('click',createSelectedProfile);
   confirmButton.addEventListener('click',confirmProfileReplacement);
   cancelButton.addEventListener('click',()=>{
     pendingReplacementSlot=-1; document.getElementById('profileConfirm').hidden=true;
   });
-  backButton.addEventListener('click',showMenu);
-  profilesButton.addEventListener('click',showProfileSelect);
   return true;
 }

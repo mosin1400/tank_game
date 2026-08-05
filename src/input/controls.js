@@ -91,17 +91,15 @@ function initDom(){
   btnMG.addEventListener('pointerup',e=>{e.stopPropagation();btnMGDown=false;mgHeld=false;});
 
   const profileUiAvailable=initProfileUI(),campaignMapAvailable=initCampaignMapUI();
-  document.getElementById('btnMissions').addEventListener('click',showMissions);
-  document.getElementById('btnBackMenu').addEventListener('click',showMenu);
-  document.getElementById('btnBackList').addEventListener('click',showMissions);
+  document.getElementById('btnBackList').addEventListener('click',showCampaignMap);
   document.getElementById('btnLaunch').addEventListener('click',()=>{initAudio();startEngine();startMission(briefIdx);});
   document.getElementById('btnNext').addEventListener('click',()=>startMission(Math.min(MISSIONS.length-1,curMission.idx+1)));
-  document.getElementById('btnVicList').addEventListener('click',showMissions);
+  document.getElementById('btnVicList').addEventListener('click',showCampaignMap);
   document.getElementById('btnRetry').addEventListener('click',()=>startMission(curMission.idx));
-  document.getElementById('btnOvList').addEventListener('click',showMissions);
+  document.getElementById('btnOvList').addEventListener('click',showCampaignMap);
   document.getElementById('btnResume').addEventListener('click',togglePause);
   document.getElementById('btnRestart').addEventListener('click',()=>{paused=false;document.body.classList.remove('paused');startMission(curMission.idx);});
-  document.getElementById('btnQuit').addEventListener('click',()=>{paused=false;showMissions();});
+  document.getElementById('btnQuit').addEventListener('click',()=>{paused=false;showCampaignMap();});
   document.getElementById('btnPause').addEventListener('click',togglePause);
   document.getElementById('btnMute').addEventListener('click',toggleMute);
 

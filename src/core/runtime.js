@@ -74,7 +74,8 @@ try{
 
   step('سلاح‌ها و سامانه ماموریت‌ها…',92); await frame();
   const campaignUiReady=initDom(); buildWeaponSlots();
-  if(campaignUiReady)showProfileSelect(); else showMenu();
+  if(!campaignUiReady)console.warn('بخشی از رابط کمپین آماده نیست.');
+  showProfileSelect();
 
   step('آماده نبرد!',100);
   animate();

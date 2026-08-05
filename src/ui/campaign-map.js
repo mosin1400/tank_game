@@ -1,7 +1,7 @@
 /* ================= نقشهٔ تعاملی کمپین ================= */
 const CAMPAIGN_MAP_IMAGE='assets/images/campaign-map-v3.png';
 let campaignMapScale=1,campaignMapDrag=null,campaignMapOffset={x:0,y:0};
-const CAMPAIGN_MAP_MARKUP_IDS=['campaignMapViewport','campaignMapImage','campaignNodes','btnMapZoomIn','btnMapZoomOut','btnMapLaunch'];
+const CAMPAIGN_MAP_MARKUP_IDS=['campaignMapViewport','campaignMapImage','campaignNodes','btnMapZoomIn','btnMapZoomOut','btnMapLaunch','btnMapProfiles'];
 function isCampaignMapMarkupAvailable(){
   return CAMPAIGN_MAP_MARKUP_IDS.every(id=>document.getElementById(id));
 }
@@ -44,12 +44,13 @@ function setCampaignMapZoom(delta){
 }
 function initCampaignMapUI(){
   if(!isCampaignMapMarkupAvailable()){console.warn('رابط نقشه در HTML بارگذاری‌شده وجود ندارد.');return false;}
-  const elements=['campaignMapViewport','campaignMapImage','btnMapZoomIn','btnMapZoomOut','btnMapLaunch'].map(id=>document.getElementById(id));
-  const [viewport,image,zoomIn,zoomOut,launchButton]=elements;
+  const elements=['campaignMapViewport','campaignMapImage','btnMapZoomIn','btnMapZoomOut','btnMapLaunch','btnMapProfiles'].map(id=>document.getElementById(id));
+  const [viewport,image,zoomIn,zoomOut,launchButton,profilesButton]=elements;
   image.src=CAMPAIGN_MAP_IMAGE;
   zoomIn.addEventListener('click',()=>setCampaignMapZoom(.15));
   zoomOut.addEventListener('click',()=>setCampaignMapZoom(-.15));
   launchButton.addEventListener('click',launchSelectedCampaignMission);
+  profilesButton.addEventListener('click',showProfileSelect);
   viewport.addEventListener('wheel',event=>{event.preventDefault();setCampaignMapZoom(event.deltaY<0?.1:-.1);},{passive:false});
   viewport.addEventListener('pointerdown',event=>{if(campaignMapScale<=1)return;campaignMapDrag={x:event.clientX-campaignMapOffset.x,y:event.clientY-campaignMapOffset.y};viewport.setPointerCapture(event.pointerId);});
   viewport.addEventListener('pointermove',event=>{if(!campaignMapDrag)return;campaignMapOffset.x=event.clientX-campaignMapDrag.x;campaignMapOffset.y=event.clientY-campaignMapDrag.y;applyCampaignMapTransform();});
