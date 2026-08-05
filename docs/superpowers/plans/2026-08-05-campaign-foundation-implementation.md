@@ -98,7 +98,7 @@ git commit -m "test: add campaign foundation regression harness"
 
 **Files:**
 - Create: `src/campaign/mission-data.js`, `src/campaign/campaign-state.js`
-- Modify: `src/boot.js`, `src/missions/definitions.js`
+- Modify: `src/boot.js`, `src/missions/definitions.js`, `src/missions/director.js`, `src/ui/screens.js`, `src/input/controls.js`
 - Test: `tests/campaign-foundation-check.ps1`
 
 **Consumes:** `docs/superpowers/specs/2026-08-05-campaign-40-missions-design.md`.
@@ -113,6 +113,9 @@ Append to the regression script:
 Assert-True (($raw -match "mapNode:'M01'") -and ($raw -match "mapNode:'M40'")) 'first and final map nodes exist'
 Assert-True (($raw -match "sceneId:'scene-01'") -and ($raw -match "sceneId:'scene-40'")) 'every endpoint has a scene id'
 Assert-True (($raw -match "airProfile:") -and ($raw -match "persistentEffect:")) 'air and persistent effect metadata exist'
+$screensRaw=Get-Content (Join-Path $Root 'src/ui/screens.js') -Raw
+$directorRaw=Get-Content (Join-Path $Root 'src/missions/director.js') -Raw
+Assert-True (($screensRaw -match 'MISSIONS.length') -and ($directorRaw -match 'MISSIONS.length')) 'campaign UI and victory limits are data-driven'
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -159,6 +162,21 @@ function getCampaignEffect(profile,effectId){ return Boolean(profile.effects[eff
 
 Add both new files after audio and before UI files in `src/boot.js`. Remove the old literal 20-record `MISSIONS` declaration while preserving palettes, weapon definitions, `objectiveText`, `mDiff` and existing global names.
 
+Replace every campaign-length constant that controls progress or navigation with `MISSIONS.length`; do not alter unrelated gameplay timings such as the 20-second power-up interval. The required replacements are:
+
+```javascript
+// src/ui/screens.js
+function totalStars(){ let n=0; for(let i=0;i<MISSIONS.length;i++)n+=prog.s[i]||0; return n; }
+// all displayed maxima: MISSIONS.length and MISSIONS.length*3
+// src/input/controls.js
+document.getElementById('btnNext').addEventListener('click',()=>startMission(Math.min(MISSIONS.length-1,curMission.idx+1)));
+// src/missions/director.js
+prog.u=Math.max(prog.u,Math.min(MISSIONS.length,M.idx+2));
+document.getElementById('btnNext').style.display=M.idx<MISSIONS.length-1?'':'none';
+// src/ui/screens.js, Ctrl+Shift+Alt+E
+prog.u=MISSIONS.length; for(var i=0;i<MISSIONS.length;i++)prog.s[i]=Math.max(prog.s[i]||0,3);
+```
+
 - [ ] **Step 4: Run data checks and syntax checks**
 
 Run:
@@ -174,7 +192,7 @@ Expected: all pass; the old director still sees a 40-record `MISSIONS` adapter.
 - [ ] **Step 5: Commit the data layer**
 
 ```powershell
-git add src/campaign src/missions/definitions.js src/boot.js tests/campaign-foundation-check.ps1
+git add src/campaign src/missions/definitions.js src/missions/director.js src/ui/screens.js src/input/controls.js src/boot.js tests/campaign-foundation-check.ps1
 git commit -m "feat: add forty-mission campaign data"
 ```
 
