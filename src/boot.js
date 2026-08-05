@@ -74,7 +74,8 @@
     'src/profile/profile-view-model.js','src/profile/profile-store.js','src/profile/profile-ui.js',
     'src/entities/t34.js','src/entities/panzer.js','src/combat/projectiles.js',
     'src/input/controls.js','src/combat/combat.js','src/missions/director.js',
-    'src/entities/player.js','src/ui/game-ui.js','src/ui/screens.js','src/main.js'
+    'src/entities/player.js','src/ui/game-ui.js','src/ui/campaign-map-model.js',
+    'src/ui/mission-briefing.js','src/ui/campaign-map.js','src/ui/screens.js','src/main.js'
   ];
   function loadGameScripts(i){
     if(i>=GAME_SCRIPTS.length)return;

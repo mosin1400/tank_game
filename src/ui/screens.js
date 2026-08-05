@@ -17,26 +17,7 @@ function showMissions(){
   state='menu'; document.body.dataset.state='menu';
   document.getElementById('listStars').textContent=
     `ستاره‌ها: ${faNum(totalStars())} از ${faNum(MISSIONS.length*3)} · ماموریت‌های باز: ${faNum(prog.u)} از ${faNum(MISSIONS.length)}`;
-  const grid=document.getElementById('missionGrid');
-  grid.innerHTML='';
-  MISSIONS.forEach((m,i)=>{
-    if(i===0||MISSIONS[i].c!==MISSIONS[i-1].c){
-      const h=document.createElement('div');
-      h.className='camphead';
-      h.textContent=`کمپین ${faNum(m.c)} — ${CAMPS[m.c-1]}`;
-      grid.appendChild(h);
-    }
-    const unlocked=i<prog.u;
-    const s=prog.s[i]||0;
-    const d=document.createElement('div');
-    d.className='mcard'+(unlocked?'':' locked');
-    d.innerHTML=`<div class="mnum">${unlocked?faNum(i+1):'🔒'}</div>
-      <div class="minfo"><div class="mt">${m.n}</div>
-      <div class="ms">${TLABEL[m.t]} · ${objectiveText(m)}</div></div>
-      <div class="mstars">${'★'.repeat(s)}<span class="dim">${'★'.repeat(3-s)}</span></div>`;
-    if(unlocked)d.addEventListener('click',()=>showBrief(i));
-    grid.appendChild(d);
-  });
+  renderCampaignMap();
   showScreen('missions');
 }
 let briefIdx=0;

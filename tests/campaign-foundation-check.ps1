@@ -39,3 +39,11 @@ Assert-True ($html -match 'id="profileSelect"') 'profile screen container exists
 $profileCssPath = Join-Path $Root 'styles/profile.css'
 Assert-True (Test-Path $profileCssPath) 'profile stylesheet exists'
 Assert-True ((Get-Content $profileCssPath -Raw) -match '--olive-light:\s*#e6ead1') 'profile palette token exists'
+
+$mapUiPath = Join-Path $Root 'src/ui/campaign-map.js'
+Assert-True (Test-Path $mapUiPath) 'campaign map UI exists'
+$mapRaw = Get-Content $mapUiPath -Raw
+Assert-True ($mapRaw -match 'CAMPAIGN_MISSIONS\.forEach|buildCampaignMapNodes') 'map renders from campaign data'
+Assert-True ($mapRaw -match 'campaign-map-v3.png') 'map uses approved artwork'
+Assert-True ($mapRaw -match "className='map-node'") 'map node class is emitted'
+Assert-True (Test-Path (Join-Path $Root 'assets/images/campaign-map-v3.png')) 'approved map asset exists'

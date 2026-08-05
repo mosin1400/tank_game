@@ -30,6 +30,7 @@
 </script>
 <link rel="stylesheet" href="styles/game.css">
 <link rel="stylesheet" href="styles/profile.css">
+<link rel="stylesheet" href="styles/campaign-map.css">
 </head>
 <body data-state="menu">
 <div id="app"></div>
@@ -125,12 +126,24 @@
 </div>
 
 <div id="missions" class="overlay">
-  <div class="card panel">
-    <h2>ماموریت‌ها</h2>
-    <div class="totalstars" id="listStars"></div>
-    <div id="missionGrid"></div>
-    <button id="btnBackMenu" class="bigbtn ghost">بازگشت</button>
-  </div>
+  <section class="campaign-shell panel" aria-labelledby="campaignMapTitle">
+    <header class="campaign-head">
+      <div class="campaign-head-copy"><h2 id="campaignMapTitle">نقشهٔ عملیات واردان</h2><div class="totalstars" id="listStars"></div></div>
+      <button id="btnBackMenu" class="bigbtn ghost">بازگشت</button>
+    </header>
+    <div id="campaignMapViewport">
+      <div id="campaignMapStage">
+        <img id="campaignMapImage" alt="نقشهٔ کشور خیالی واردان">
+        <div id="campaignNodes" aria-label="مسیر مأموریت‌ها"></div>
+      </div>
+      <div class="map-zoom"><button id="btnMapZoomIn" aria-label="بزرگ‌نمایی">+</button><button id="btnMapZoomOut" aria-label="کوچک‌نمایی">−</button></div>
+    </div>
+    <section class="map-briefing" aria-live="polite">
+      <div><div class="map-brief-act" id="mapBriefAct"></div><h3 id="mapBriefTitle"></h3><p id="mapBriefStory"></p><div class="map-meta"><span>هوا: <b id="mapBriefWeather"></b></span><span>آسمان: <b id="mapBriefAir"></b></span><span class="map-stars" id="mapBriefStars"></span></div></div>
+      <div class="map-objectives"><div><b>هدف اصلی:</b> <span id="mapBriefPrimary"></span></div><div><b>هدف اختیاری:</b> <span id="mapBriefOptional"></span></div><div><b>دشمن:</b> <span id="mapBriefEnemies"></span></div><div><b>پاداش:</b> <span id="mapBriefReward"></span></div></div>
+      <button id="btnMapLaunch" class="bigbtn map-launch">شروع عملیات</button>
+    </section>
+  </section>
 </div>
 
 <div id="brief" class="overlay">
