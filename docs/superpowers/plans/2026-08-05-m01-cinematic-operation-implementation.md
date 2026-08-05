@@ -123,7 +123,7 @@ git commit -m "feat: replace legacy menu with campaign hub"
 - `LAYOUT` has `{id, playerSpawn, zones, convoyPath, checkpoints, encounters, landmarks, cinematicBeats}`.
 - `CAMPAIGN_MISSIONS[0].runtime.operation` equals `'opening-convoy'`.
 
-- [ ] **Step 1: Write the failing data test**
+- [x] **Step 1: Write the failing data test**
 
 Create `tests/opening-operation-data-check.mjs`. Load real scene files in a VM, then assert scene ID `scene-01`, three ordered zones (`yard`, `broken-road`, `watch-hill`), exactly three truck path records, three checkpoints, five finite encounter records, and frozen data.
 
@@ -134,23 +134,23 @@ if(scene.convoyPath.length!==3||scene.encounters.length!==5)throw new Error('M01
 if(!Object.isFrozen(scene))throw new Error('scene layout must be immutable');
 ```
 
-- [ ] **Step 2: Run the test and verify RED**
+- [x] **Step 2: Run the test and verify RED**
 
 Run: `node tests/opening-operation-data-check.mjs`
 
 Expected: failure because the scene registry and layout do not exist.
 
-- [ ] **Step 3: Create authored M01 data**
+- [x] **Step 3: Create authored M01 data**
 
 Define fixed coordinates in `scene-01.js`: player spawn `[-76,0,92]`; zones from southwest to northeast; convoy stops at yard, canal and exit; checkpoint IDs `m01-yard`, `m01-road`, `m01-hill`; encounters `yard-scout-a`, `yard-scout-b`, `road-ambush-a`, `road-ambush-b`, `hill-commander`; landmarks for the fuel yard, rail siding, canal bridge, orchard, watch tower, generator and exit gate. Use `Object.freeze` recursively for all exported records. Update M01 campaign data to title `آتش در سرو`, scene `scene-01`, runtime `{t:'operation',v:3,c:1,operation:'opening-convoy'}` and preserve the persistent reward schema.
 
-- [ ] **Step 4: Run the test and verify GREEN**
+- [x] **Step 4: Run the test and verify GREEN**
 
 Run: `node tests/opening-operation-data-check.mjs`
 
 Expected: `PASS: opening operation scene data`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add src/campaign/mission-data.js src/scenes/scene-library.js src/scenes/scene-01.js tests/opening-operation-data-check.mjs
