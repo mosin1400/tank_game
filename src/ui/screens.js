@@ -85,6 +85,7 @@ function startMission(i){
   aimPoint.set(0,0,40);
   paused=false; document.body.classList.remove('paused');
   state='play'; document.body.dataset.state='play';
+  if(curMission.def.operation==='opening-convoy')OpeningOperation.start(curMission);
   refreshWeaponSlots();
   showBanner(`ماموریت ${faNum(i+1)} — ${MISSIONS[i].n}`,objectiveText(MISSIONS[i]));
   showScreen(null);

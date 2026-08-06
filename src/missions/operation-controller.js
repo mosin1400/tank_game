@@ -3,20 +3,29 @@
   let deps=null,active=null;
   function defaults(){return {loadScene:mission=>SceneBuilder.loadForMission(mission),clearScene:()=>SceneBuilder.clearActive(),createConvoy:path=>Convoy.create(path),updateConvoy:(trucks,dt,act)=>Convoy.update(trucks,dt,act),spawnEncounter:enc=>{
     const enemy=spawnEnemy(enc.type,{stationary:enc.stationary,hp:enc.hp});if(enemy){enemy.root.position.set(...enc.position);enemy.root.rotation.y=Math.PI;}return enemy;
-  },encounterAlive:()=>active.enemies.some(enemy=>enemy&&!enemy.dead&&enemies.includes(enemy)),showObjective:(title,text)=>showBanner(title,text),missionVictory};}
+  },encounterAlive:()=>active.enemies.some(enemy=>enemy&&!enemy.dead&&enemies.includes(enemy)),showObjective:(title,text)=>showBanner(title,text),showMessage:text=>showMsg(text,3600),missionVictory};}
   function configure(next){deps=next||null;}
   function start(mission){
     dispose();const layout=SceneLibrary.getScene(mission.def.sceneId);if(!layout)return null;
     if(typeof player!=='undefined'&&player){
       player.pos.set(...layout.playerSpawn); player.root.position.copy(player.pos); player.yaw=0; player.root.rotation.y=0;
     }
-    const api=deps||defaults();if(api.loadScene)api.loadScene(mission);active={layout,api,actIndex:0,trucks:api.createConvoy(layout.convoyPath),enemies:[],started:false};spawnAct();return active;
+    const api=deps||defaults();if(api.loadScene)api.loadScene(mission);
+    active={layout,api,actIndex:0,trucks:api.createConvoy(layout.convoyPath),enemies:[],introT:8,spawnedAct:false};
+    api.showObjective('آتش در سرو','سارا: دیده‌بان دشمن هنوز ما را ندیده؛ کاروان را آماده کن.');
+    if(api.showMessage)api.showMessage('رامین: مسیر خروج از حیاط سوخت شروع می‌شود.');
+    return active;
   }
-  function spawnAct(){const act=active.layout.zones[active.actIndex];active.enemies=active.layout.encounters.filter(enc=>enc.zone===act.id).map(active.api.spawnEncounter);active.api.showObjective(act.title,act.objective);}
+  function spawnAct(){const act=active.layout.zones[active.actIndex];active.enemies=active.layout.encounters.filter(enc=>enc.zone===act.id).map(active.api.spawnEncounter);active.spawnedAct=true;active.api.showObjective(act.title,act.objective);}
   function update(dt){
     if(!active||!curMission||curMission.def.operation!=='opening-convoy')return {handled:false};
     active.api.updateConvoy(active.trucks,dt,active.actIndex);
     if(!active.trucks.some(truck=>truck.alive))return {handled:true,failed:true,completed:false};
+    if(!active.spawnedAct){
+      active.introT-=dt;
+      if(active.introT<=0)spawnAct();
+      return {handled:true,failed:false,completed:false};
+    }
     if(active.api.encounterAlive())return {handled:true,failed:false,completed:false};
     if(active.actIndex<active.layout.zones.length-1){active.actIndex++;spawnAct();return {handled:true,failed:false,completed:false};}
     if(active.trucks.some(truck=>truck.alive&&truck.reachedExit)){active.api.missionVictory();return {handled:true,failed:false,completed:true};}
