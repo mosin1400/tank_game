@@ -8,7 +8,7 @@
   function start(mission){
     dispose();const layout=SceneLibrary.getScene(mission.def.sceneId);if(!layout)return null;
     if(typeof player!=='undefined'&&player){
-      player.pos.set(...layout.playerSpawn); player.root.position.copy(player.pos); player.yaw=0; player.root.rotation.y=0;
+      player.pos.set(...layout.playerSpawn); player.root.position.copy(player.pos); player.yaw=Math.PI; player.root.rotation.y=Math.PI;
     }
     const api=deps||defaults();if(api.loadScene)api.loadScene(mission);
     active={layout,api,actIndex:0,trucks:api.createConvoy(layout.convoyPath),enemies:[],introT:8,spawnedAct:false};

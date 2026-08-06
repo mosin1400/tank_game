@@ -20,4 +20,7 @@ const active=builder.loadForMission({sceneId:'scene-01'});
 if(!active||active.id!=='scene-01'||added!==1||colliderAdds!==2||legacyHidden!==1)throw new Error('scene-01 must replace the legacy layer');
 builder.clearActive(); builder.clearActive();
 if(removed!==1||colliderRemovals!==2||legacyRestored!==1||builder.getActive()!==null)throw new Error('scene cleanup must restore the legacy layer exactly once');
+const nested=builder.loadForMission({def:{sceneId:'scene-01'}});
+if(!nested||nested.id!=='scene-01')throw new Error('runtime mission wrappers must resolve def.sceneId');
+builder.clearActive();
 console.log('PASS: cinematic scene layer lifecycle');

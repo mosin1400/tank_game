@@ -8,13 +8,14 @@
     map.repeat.set(.5,.5); map.offset.set(column*.5,row*.5);
     return mat(Object.assign({map,roughness:.72,metalness:.2},options));
   }
-  function buildRailWagon(parent,x,z,rotation=0){
+  function buildRailWagon(parent,handle,x,z,rotation=0){
     const wagon=new THREE.Group(); wagon.position.set(x,0,z); wagon.rotation.y=rotation;
     const wood=industrialMaterial(0,1,{roughness:.84}),steel=industrialMaterial(0,1,{metalness:.68,roughness:.42});
     mkBox(wagon,3.4,.45,11,steel,0,.78,0); mkBox(wagon,3.05,2.25,8.5,wood,0,2.02,0);
     for(const side of[-1,1])mkBox(wagon,.18,2.7,8.9,steel,side*1.62,2.25,0);
     for(const zWheel of[-3.6,3.6])for(const xWheel of[-1.55,1.55])mkCyl(wagon,.62,.62,.32,matDark,xWheel,.58,zWheel,0,Math.PI/2,0,12);
-    parent.add(wagon); return wagon;
+    mkBox(wagon,.3,.25,1.1,steel,0,.86,-5.7); mkBox(wagon,.3,.25,1.1,steel,0,.86,5.7);
+    parent.add(wagon); handle.addCollider({type:'aabb',x,z,hw:5.7,hd:2.1,h:3.6}); return wagon;
   }
   function buildFuelDepotDetails(parent,center){
     const [x,,z]=center,drum=industrialMaterial(0,0,{metalness:.45,roughness:.5}),crate=industrialMaterial(0,1,{roughness:.85});
@@ -54,7 +55,9 @@
     addBox(13,5,9,industrialMaterial(0,0,{metalness:.28,roughness:.64}),fuelX+14,2.5,fuelZ-9,.1);
     addBox(15,.25,10,industrialMaterial(0,0,{metalness:.55,roughness:.42}),fuelX+14,5.2,fuelZ-9,.1);
     buildFuelDepotDetails(group,layout.landmarks.fuelYard);
-    buildRailWagon(group,-93,46,-.12); buildRailWagon(group,-62,42,-.12);
+    buildRailWagon(group,handle,-96,46,Math.PI/2);
+    buildRailWagon(group,handle,-84,46,Math.PI/2);
+    buildRailWagon(group,handle,-72,46,Math.PI/2);
     const [bridgeX,,bridgeZ]=layout.landmarks.canalBridge;
     addBox(56,.04,8,mat({color:0x253c40,roughness:1}),bridgeX,.01,bridgeZ+14,-.5);
     addBox(8,.4,14,matTrunk,bridgeX,.25,bridgeZ,0);
@@ -81,7 +84,8 @@
   }
   function loadForMission(mission){
     clearActive();
-    const layout=mission&&SceneLibrary.getScene(mission.sceneId);
+    const sceneId=mission&&(mission.sceneId||(mission.def&&mission.def.sceneId));
+    const layout=sceneId&&SceneLibrary.getScene(sceneId);
     if(!layout)return null;
     const deps=configured||defaultDependencies();
     const handle={id:layout.id,root:deps.createRoot(),colliders:[],deps,replacesLegacy:layout.id==='scene-01',addCollider(collider){this.colliders.push(collider);deps.addCollider(collider);}};
