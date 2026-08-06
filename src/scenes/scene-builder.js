@@ -1,6 +1,28 @@
 /* ================= سازندهٔ لایه‌های صحنه ================= */
 (function(root){
   let active=null,configured=null;
+  const INDUSTRIAL_ATLAS='assets/images/m01-industrial-material-atlas.png';
+  function industrialMaterial(column,row,options={}){
+    const map=new THREE.TextureLoader().load(INDUSTRIAL_ATLAS);
+    map.colorSpace=THREE.SRGBColorSpace; map.wrapS=map.wrapT=THREE.RepeatWrapping;
+    map.repeat.set(.5,.5); map.offset.set(column*.5,row*.5);
+    return mat(Object.assign({map,roughness:.72,metalness:.2},options));
+  }
+  function buildRailWagon(parent,x,z,rotation=0){
+    const wagon=new THREE.Group(); wagon.position.set(x,0,z); wagon.rotation.y=rotation;
+    const wood=industrialMaterial(0,1,{roughness:.84}),steel=industrialMaterial(0,1,{metalness:.68,roughness:.42});
+    mkBox(wagon,3.4,.45,11,steel,0,.78,0); mkBox(wagon,3.05,2.25,8.5,wood,0,2.02,0);
+    for(const side of[-1,1])mkBox(wagon,.18,2.7,8.9,steel,side*1.62,2.25,0);
+    for(const zWheel of[-3.6,3.6])for(const xWheel of[-1.55,1.55])mkCyl(wagon,.62,.62,.32,matDark,xWheel,.58,zWheel,0,Math.PI/2,0,12);
+    parent.add(wagon); return wagon;
+  }
+  function buildFuelDepotDetails(parent,center){
+    const [x,,z]=center,drum=industrialMaterial(0,0,{metalness:.45,roughness:.5}),crate=industrialMaterial(0,1,{roughness:.85});
+    for(const [dx,dz] of [[-14,9],[-12,12],[-9,10],[17,-3],[20,-6]]){
+      const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.48,.55,1.35,12),drum);barrel.position.set(x+dx,.68,z+dz);barrel.castShadow=barrel.receiveShadow=true;parent.add(barrel);
+    }
+    for(const [dx,dz] of [[11,5],[14,5],[12,7],[-17,-3]])mkBox(parent,1.15,1.05,1.15,crate,x+dx,.55,z+dz,0);
+  }
   function defaultDependencies(){
     return {
       createRoot:()=>new THREE.Group(),
@@ -16,9 +38,9 @@
     if(layout.id!=='scene-01')return;
     const group=handle.root;
     const addBox=(w,h,d,material,x,y,z,ry=0)=>mkBox(group,w,h,d,material,x,y,z,0,ry,0);
-    const roadMaterial=mat({color:0x49443a,roughness:1});
-    const mudMaterial=mat({color:0x3d4032,roughness:1});
-    const railMaterial=mat({color:0x36342f,metalness:.7,roughness:.35});
+    const roadMaterial=industrialMaterial(1,1,{roughness:1});
+    const mudMaterial=industrialMaterial(1,1,{roughness:1});
+    const railMaterial=industrialMaterial(0,1,{metalness:.75,roughness:.3});
     const fireMaterial=mat({color:0x6a2814,roughness:.8});
     addBox(138,.08,7,roadMaterial,8,.04,38,-.54);
     addBox(70,.08,6,mudMaterial,73,.05,-14,-.7);
@@ -26,11 +48,13 @@
     for(let x=-114;x<=-42;x+=5)addBox(.35,.18,5,matTrunk,x,.1,46,-.12);
     const [fuelX,,fuelZ]=layout.landmarks.fuelYard;
     for(const offset of [[-10,4],[-3,-2],[6,3]]){
-      const tank=new THREE.Mesh(new THREE.CylinderGeometry(3.3,3.3,7,16),mat({color:0x5d6c53,metalness:.45,roughness:.5}));
+      const tank=new THREE.Mesh(new THREE.CylinderGeometry(3.3,3.3,7,20),industrialMaterial(0,0,{metalness:.5,roughness:.42}));
       tank.rotation.z=Math.PI/2; tank.position.set(fuelX+offset[0],3.2,fuelZ+offset[1]); tank.castShadow=tank.receiveShadow=true; group.add(tank);
     }
-    addBox(13,5,9,mat({map:texWall}),fuelX+14,2.5,fuelZ-9,.1);
-    addBox(15,.25,10,matRoof,fuelX+14,5.2,fuelZ-9,.1);
+    addBox(13,5,9,industrialMaterial(0,0,{metalness:.28,roughness:.64}),fuelX+14,2.5,fuelZ-9,.1);
+    addBox(15,.25,10,industrialMaterial(0,0,{metalness:.55,roughness:.42}),fuelX+14,5.2,fuelZ-9,.1);
+    buildFuelDepotDetails(group,layout.landmarks.fuelYard);
+    buildRailWagon(group,-93,46,-.12); buildRailWagon(group,-62,42,-.12);
     const [bridgeX,,bridgeZ]=layout.landmarks.canalBridge;
     addBox(56,.04,8,mat({color:0x253c40,roughness:1}),bridgeX,.01,bridgeZ+14,-.5);
     addBox(8,.4,14,matTrunk,bridgeX,.25,bridgeZ,0);
