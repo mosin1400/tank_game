@@ -1,6 +1,20 @@
 /* ================= میدان نبرد ================= */
 const enemyCamps=[];
 let legacyWorldRoot=null;
+let legacyWorldState=null;
+function setLegacyWorldVisible(visible){
+  if(!legacyWorldRoot)return;
+  if(!visible){
+    if(legacyWorldState)return;
+    legacyWorldState={staticObs:[...staticObs],buildings:[...buildings],trees:[...trees],enemyCamps:[...enemyCamps]};
+    staticObs.length=0; buildings.length=0; trees.length=0; enemyCamps.length=0;
+    legacyWorldRoot.visible=false; return;
+  }
+  if(!legacyWorldState)return;
+  staticObs.push(...legacyWorldState.staticObs); buildings.push(...legacyWorldState.buildings);
+  trees.push(...legacyWorldState.trees); enemyCamps.push(...legacyWorldState.enemyCamps);
+  legacyWorldState=null; legacyWorldRoot.visible=true;
+}
 function buildBattlefield(){
   legacyWorldRoot=new THREE.Group(); scene.add(legacyWorldRoot);
   const world=legacyWorldRoot;

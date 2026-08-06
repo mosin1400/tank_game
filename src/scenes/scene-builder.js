@@ -6,6 +6,7 @@
       createRoot:()=>new THREE.Group(),
       addRoot:sceneRoot=>scene.add(sceneRoot),
       removeRoot:sceneRoot=>scene.remove(sceneRoot),
+      setLegacyVisible:visible=>setLegacyWorldVisible(visible),
       addCollider:collider=>staticObs.push(collider),
       removeCollider:collider=>{const index=staticObs.indexOf(collider);if(index>=0)staticObs.splice(index,1);},
       build:(layout,handle)=>buildOpeningScene(layout,handle)
@@ -50,14 +51,17 @@
   function clearActive(){
     if(!active)return;
     active.colliders.forEach(collider=>active.deps.removeCollider(collider));
-    active.deps.removeRoot(active.root); active=null;
+    active.deps.removeRoot(active.root);
+    if(active.replacesLegacy&&active.deps.setLegacyVisible)active.deps.setLegacyVisible(true);
+    active=null;
   }
   function loadForMission(mission){
     clearActive();
     const layout=mission&&SceneLibrary.getScene(mission.sceneId);
     if(!layout)return null;
     const deps=configured||defaultDependencies();
-    const handle={id:layout.id,root:deps.createRoot(),colliders:[],deps,addCollider(collider){this.colliders.push(collider);deps.addCollider(collider);}};
+    const handle={id:layout.id,root:deps.createRoot(),colliders:[],deps,replacesLegacy:layout.id==='scene-01',addCollider(collider){this.colliders.push(collider);deps.addCollider(collider);}};
+    if(handle.replacesLegacy&&deps.setLegacyVisible)deps.setLegacyVisible(false);
     deps.addRoot(handle.root); deps.build(layout,handle); active=handle; return handle;
   }
   root.SceneBuilder=Object.freeze({configure,loadForMission,clearActive,getActive:()=>active});
