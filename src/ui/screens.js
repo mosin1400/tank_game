@@ -47,6 +47,7 @@ function showBrief(i){
   showScreen('brief');
 }
 function clearWorld(){
+  if(typeof OpeningOperation!=='undefined')OpeningOperation.dispose();
   for(const e of[...enemies])scene.remove(e.root);
   enemies.length=0; bossRef=null;
   document.getElementById('bossbar').classList.remove('on');

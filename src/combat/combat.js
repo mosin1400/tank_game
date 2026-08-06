@@ -55,6 +55,7 @@ function fireMG(){
   sMG(0.8);
 }
 function applySplash(pos,dmg,rad){
+  if(OpeningOperation&&OpeningOperation.isActive())Convoy.damageNear(pos,dmg,rad);
   for(const e of[...enemies]){
     const d=Math.hypot(pos.x-e.root.position.x,pos.z-e.root.position.z);
     if(d<rad)damageEnemy(e,dmg*(1-d/rad*0.55),pos.clone());

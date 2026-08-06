@@ -211,6 +211,12 @@ function makeMission(idx){
 function updateDirector(dt){
   const M=curMission;
   if(!M||M.done)return;
+  if(M.def.operation==='opening-convoy'){
+    if(!OpeningOperation.isActive())OpeningOperation.start(M);
+    const result=OpeningOperation.update(dt);
+    if(result.failed)openDefeat();
+    return;
+  }
   if(M.t==='destroy'){
     if(M.spawned>M.total){
       console.error('🚨 اسپاون اضافه! spawned:',M.spawned,'total:',M.total);

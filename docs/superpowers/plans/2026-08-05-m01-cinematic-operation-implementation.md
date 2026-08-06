@@ -224,7 +224,7 @@ git commit -m "feat: add owned cinematic scene layers"
 - Produces `OpeningOperation.start(mission)`, `OpeningOperation.update(dt)`, `OpeningOperation.retryCheckpoint()`, `OpeningOperation.dispose()`, `OpeningOperation.isActive()`.
 - `OpeningOperation.update` returns `{handled:true, completed:boolean, failed:boolean}` while active; `updateDirector` returns immediately when handled.
 
-- [ ] **Step 1: Write failing operation-controller tests**
+- [x] **Step 1: Write failing operation-controller tests**
 
 Create `tests/opening-operation-controller-check.mjs` using the real controller with injected scene/convoy/enemy/cinematic functions. Assert ordered acts, no random spawning, checkpoint retry resets only the current act, all trucks destroyed returns `failed:true`, and `completed:true` occurs only after the hill encounter is cleared and at least one truck reaches exit.
 
@@ -237,17 +237,17 @@ operation.destroyAllTrucksForTest();
 if(!operation.update(.1).failed)throw new Error('all trucks lost must fail');
 ```
 
-- [ ] **Step 2: Run the test and verify RED**
+- [x] **Step 2: Run the test and verify RED**
 
 Run: `node tests/opening-operation-controller-check.mjs`
 
 Expected: failure because `OpeningOperation` and `Convoy` do not exist.
 
-- [ ] **Step 3: Implement convoy and opening-operation state machine**
+- [x] **Step 3: Implement convoy and opening-operation state machine**
 
 Build each truck from low-poly cab, cargo bed, wheels, lights and health-bar group; routes move only after their act activates. Register truck collision circles separately and make `damagePlayer`/enemy shell splash call `Convoy.damage` when an explosion overlaps a truck. Operation controller must spawn only the five named encounter records with existing `spawnEnemy(type,{stationary,hp})`, track their live IDs, set the checkpoint after each completed act, use `showBanner` and `showMsg` for the current objective, and call existing `missionVictory()` only after exit conditions. `makeMission` identifies `runtime.operation==='opening-convoy'`; `updateDirector` delegates before generic `survive` logic. Retry uses `OpeningOperation.retryCheckpoint()` and never invokes generic random spawn loops.
 
-- [ ] **Step 4: Run controller checks and verify GREEN**
+- [x] **Step 4: Run controller checks and verify GREEN**
 
 Run:
 
@@ -258,7 +258,7 @@ node tests/scene-lifecycle-check.mjs
 
 Expected: both print `PASS`; test output proves five named encounters and no generic spawn call for M01.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add src/entities/convoy.js src/missions/operation-controller.js src/missions/director.js src/combat/combat.js src/ui/game-ui.js tests/opening-operation-controller-check.mjs

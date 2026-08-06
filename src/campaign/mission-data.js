@@ -48,5 +48,5 @@ const CAMPAIGN_MISSIONS=Object.freeze([
 ]);
 CAMPS=['مرز خاکستر','رود آهن','کوهستان خاموش','راه آخر'];
 /* کنترل‌کنندهٔ اختصاصی M01 در تحویل بعد جای این مسیر سازگار را می‌گیرد. */
-MISSIONS=CAMPAIGN_MISSIONS.map(m=>({n:m.title,d:m.briefing,t:m.runtime.operation?'survive':m.runtime.t,v:m.runtime.v,p:m.palette,c:m.act,bossName:m.runtime.bossName,bossHp:m.runtime.bossHp}));
+MISSIONS=CAMPAIGN_MISSIONS.map(m=>({n:m.title,d:m.briefing,t:m.runtime.operation?'survive':m.runtime.t,v:m.runtime.v,p:m.palette,c:m.act,sceneId:m.sceneId,operation:m.runtime.operation||null,bossName:m.runtime.bossName,bossHp:m.runtime.bossHp}));
 function getCampaignMission(id){return CAMPAIGN_MISSIONS.find(m=>m.id===id)||null;}
