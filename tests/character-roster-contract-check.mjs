@@ -66,14 +66,30 @@ assert.deepEqual(
 );
 
 const byId = new Map(roster.entries.map((entry) => [entry.id, entry]));
-const isLocalAssetUrl = (value) => (
-  typeof value === 'string' &&
-  value.startsWith('assets/models/characters/') &&
-  !value.startsWith('/') &&
-  !value.includes('..') &&
-  !/^[a-z][a-z\d+.-]*:/i.test(value) &&
-  !value.includes('\\')
-);
+const isLocalAssetUrl = (value) => {
+  if (typeof value !== 'string' || value.length === 0) return false;
+  let decoded = value;
+  for (let index = 0; index <= value.length; index += 1) {
+    if (/%(?:2e|2f|5c)/i.test(decoded)) return false;
+    try {
+      const next = decodeURIComponent(decoded);
+      if (next === decoded) break;
+      decoded = next;
+    } catch {
+      return false;
+    }
+  }
+  const parts = decoded.split('/');
+  return decoded === decoded.trim() &&
+    decoded.startsWith('assets/models/characters/') &&
+    !decoded.includes('\\') &&
+    !decoded.includes('?') &&
+    !decoded.includes('#') &&
+    !/[\u0000-\u001f\u007f]/.test(decoded) &&
+    parts.length >= 4 &&
+    parts.every((part) => part !== '' && part !== '.' && part !== '..') &&
+    parts[0] === 'assets' && parts[1] === 'models' && parts[2] === 'characters';
+};
 
 for (const entry of roster.entries) {
   assert.ok(validBodies.has(entry.body), `${entry.id} has invalid body`);

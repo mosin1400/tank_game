@@ -10,6 +10,31 @@
   var VALID_FACTIONS={vardan:true,ash:true,civilian:true};
   var VALID_BODIES={lean:true,medium:true,heavy:true};
   var VALID_FACE_TIERS={full:true,simple:true};
+  var ROLE_FIELDS=['kind','faction','body','faceTier','defaultState'];
+  var ROLE_RULES={
+    'player-commander':['named','vardan','medium','full','idle',null],
+    'ramin':['named','vardan','lean','full','idle',null],
+    'saman':['named','vardan','medium','full','idle',null],
+    'nikan':['named','vardan','medium','full','idle',null],
+    'arad':['named','vardan','lean','full','idle',null],
+    'major-mehraz':['named','vardan','heavy','simple','idle',null],
+    'shahin-tali':['named','civilian','heavy','full','idle',null],
+    'general-varen':['named','ash','lean','full','idle',null],
+    'soroush-amani':['named','vardan','lean','simple','idle',null],
+    'mehran':['named','vardan','heavy','simple','idle',null],
+    'nader-rostami':['named','vardan','medium','simple','idle',null],
+    'vardan-rifleman':['soldier','vardan','medium','simple','idle',null],
+    'vardan-tanker':['soldier','vardan','medium','simple','hatch-idle','vardan-rifleman'],
+    'vardan-engineer':['soldier','vardan','heavy','simple','repair','vardan-rifleman'],
+    'ash-rifleman':['soldier','ash','medium','simple','idle',null],
+    'ash-elite':['soldier','ash','heavy','simple','rifle-aim','ash-rifleman'],
+    'ash-crew':['soldier','ash','lean','simple','repair','ash-rifleman'],
+    'convoy-driver':['general','civilian','medium','simple','driver-sit',null],
+    'mechanic':['general','civilian','heavy','simple','repair','convoy-driver'],
+    'rail-worker':['general','civilian','heavy','simple','idle','convoy-driver'],
+    'resistance':['general','civilian','lean','simple','rifle-aim','convoy-driver'],
+    'medic':['general','civilian','medium','simple','idle','convoy-driver']
+  };
   var EMPTY_LIST=Object.freeze([]);
   var dependencies={fetchJson:defaultFetchJson};
   var record={promise:null,data:null,index:null};
@@ -43,12 +68,35 @@
   }
 
   function isLocalAssetUrl(value){
-    return isNonEmptyString(value) &&
-      value.indexOf('assets/models/characters/')===0 &&
-      value.charAt(0)!=='/' &&
-      value.indexOf('..')===-1 &&
-      value.indexOf('\\')===-1 &&
-      !/^[a-z][a-z\d+.-]*:/i.test(value);
+    if(!isNonEmptyString(value))return false;
+    var decoded=value;
+    for(var i=0;i<=value.length;i++){
+      if(/%(?:2e|2f|5c)/i.test(decoded))return false;
+      var next;
+      try{
+        next=decodeURIComponent(decoded);
+      }catch(error){
+        return false;
+      }
+      if(next===decoded)break;
+      decoded=next;
+    }
+    if(decoded!==decoded.trim() ||
+      decoded.indexOf('assets/models/characters/')!==0 ||
+      decoded.charAt(0)==='/' ||
+      decoded.indexOf('\\')!==-1 ||
+      decoded.indexOf('?')!==-1 ||
+      decoded.indexOf('#')!==-1 ||
+      /^[a-z][a-z\d+.-]*:/i.test(decoded) ||
+      /[\u0000-\u001f\u007f]/.test(decoded))return false;
+    var parts=decoded.split('/');
+    if(parts.length<4)return false;
+    for(var partIndex=0;partIndex<parts.length;partIndex++){
+      if(!parts[partIndex] || parts[partIndex]==='.' || parts[partIndex]==='..')return false;
+    }
+    return parts[0]==='assets' &&
+      parts[1]==='models' &&
+      parts[2]==='characters';
   }
 
   function sameArray(left,right){
@@ -100,6 +148,25 @@
       if(byId[entry.id])throw new Error('Duplicate character role: '+entry.id);
       byId[entry.id]=entry;
     });
+    var approvedIds=Object.keys(ROLE_RULES);
+    if(data.entries.length!==approvedIds.length){
+      throw new Error('Invalid approved character roster size');
+    }
+    data.entries.forEach(function(entry){
+      if(!Object.prototype.hasOwnProperty.call(ROLE_RULES,entry.id)){
+        throw new Error('Unexpected approved character roster role: '+entry.id);
+      }
+    });
+    approvedIds.forEach(function(id){
+      var entry=byId[id];
+      if(!entry)throw new Error('Missing approved character roster role: '+id);
+      var rule=ROLE_RULES[id];
+      ROLE_FIELDS.forEach(function(field,index){
+        if(entry[field]!==rule[index]){
+          throw new Error('Invalid approved character roster '+field+': '+id);
+        }
+      });
+    });
     data.entries.forEach(function(entry){
       if(entry.fallback===null)return;
       var fallback=byId[entry.fallback];
@@ -107,6 +174,11 @@
       if(fallback===entry)throw new Error('Character role cannot fall back to itself: '+entry.id);
       if(fallback.kind!==entry.kind || fallback.faction!==entry.faction){
         throw new Error('Character fallback must share kind and faction: '+entry.id);
+      }
+    });
+    data.entries.forEach(function(entry){
+      if(entry.fallback!==ROLE_RULES[entry.id][5]){
+        throw new Error('Invalid approved fallback root: '+entry.id);
       }
     });
     return data;
@@ -145,20 +217,23 @@
     url=url||'assets/models/characters/manifests/character-roster.json';
     if(record.data)return Promise.resolve(record.data);
     if(record.promise)return record.promise;
-    record.promise=Promise.resolve()
+    var activeRecord=record;
+    activeRecord.promise=Promise.resolve()
       .then(function(){return dependencies.fetchJson(url);})
       .then(function(incoming){
         var data=validateClone(cloneJson(incoming));
         deepFreeze(data);
-        record.data=data;
-        record.index=buildIndex(data);
+        if(record===activeRecord){
+          activeRecord.data=data;
+          activeRecord.index=buildIndex(data);
+        }
         return data;
       })
       .catch(function(error){
-        record.promise=null;
+        if(record===activeRecord)activeRecord.promise=null;
         throw error;
       });
-    return record.promise;
+    return activeRecord.promise;
   }
 
   function validate(data){
