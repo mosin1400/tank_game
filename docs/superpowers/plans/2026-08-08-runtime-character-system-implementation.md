@@ -6,7 +6,7 @@
 
 ## تصمیم‌های غیرقابل‌مذاکره
 
-- `makehuman-js` و `animouse` نصب نمی‌شوند. اولی AGPL-3.0 و بدون نگهداری فعال است؛ دومی لازم نیست زیرا `THREE.AnimationMixer` نیازها را پوشش می‌دهد.
+- `makehuman-js` 0.1.3 به‌علت AGPL-3.0 فقط در ابزار توسعهٔ جداگانهٔ `tools/characters/makehuman-js-exporter.html` استفاده می‌شود؛ مالک پروژه انتشار متن‌باز را پذیرفته است. این ابزار با Three.js r82 و 85 MB دادهٔ خام اجرا می‌شود و هرگز در runtime بازی r160 بارگذاری نمی‌شود. `animouse` لازم نیست زیرا `THREE.AnimationMixer` نیازها را پوشش می‌دهد.
 - همهٔ شخصیت‌ها مرد هستند و هیچ نماد سیاسی/نظامی واقعی ندارند.
 - یک GLB پایهٔ rigged و یک کتابخانهٔ هفت حرکت Mixamo برای همهٔ ۲۲ نقش مشترک است.
 - ۶ شخصیت اصلی: فرماندهٔ بازیکن، رامین، سامان، نیکان، شاهین تالی، ژنرال وارن.
@@ -15,7 +15,7 @@
 
 ## دارایی دستی موردنیاز از کاربر
 
-یک FBX پایهٔ مرد از MakeHuman و پس از Auto-Rig در Mixamo، این هفت حرکت: `Idle`، `Walking`، `Running`، `Rifle Aiming Idle`، `Falling Back Death`، `Talking` و `Pointing`.
+با `tools/characters/makehuman-js-exporter.html` یک OBJ پایهٔ مرد بساز و پس از Auto-Rig در Mixamo، این هفت حرکت را بگیر: `Idle`، `Walking`، `Running`، `Rifle Aiming Idle`، `Falling Back Death`، `Talking` و `Pointing`.
 
 تنظیمات: FBX Binary، 30 FPS، Without Skin برای حرکت‌ها؛ In Place فقط برای Walking و Running. T-pose پایه With Skin. نام‌ها و مسیرهای دقیق در `tools/characters/recipes/commander-medium.json` ثبت شده‌اند.
 
