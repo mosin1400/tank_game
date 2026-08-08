@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<meta charset="utf-8">
+<title>ساخت خودکار شش مدل اصلی واردان</title>
+<style>body{margin:0;padding:32px;background:#151810;color:#e6ead1;font:16px system-ui,sans-serif}pre{white-space:pre-wrap;color:#c7d097;line-height:1.8}strong{color:#aab668}</style>
+<h1>ساخت خودکار شش مدل اصلی</h1><p>این صفحه هیچ تنظیم دستی ندارد؛ شش OBJ را تولید و در پوشهٔ raw پروژه ذخیره می‌کند.</p><pre id="log">آماده‌سازی makehuman-js…</pre>
+<script src="/tools/cache/three-r82.min.js"></script>
+<script src="/tools/cache/makehuman-js-package-complete/package/dist/makehuman.min.js"></script>
+<script>
+(function(){
+  'use strict';
+  var log=document.getElementById('log');
+  var presets=[
+    {id:'player-commander',height:.56,weight:.56,age:34,jaw:.15,nose:.02,skin:'#c58f72'},
+    {id:'ramin',height:.60,weight:.42,age:39,jaw:-.22,nose:.10,skin:'#a66f52'},
+    {id:'saman',height:.52,weight:.58,age:30,jaw:.32,nose:.06,skin:'#b77d60'},
+    {id:'nikan',height:.47,weight:.43,age:24,jaw:-.10,nose:-.14,skin:'#d09a78'},
+    {id:'shahin-tali',height:.58,weight:.70,age:44,jaw:.40,nose:.04,skin:'#7e503d'},
+    {id:'general-varen',height:.73,weight:.39,age:55,jaw:-.05,nose:.24,skin:'#c18c70'}
+  ];
+  var baseVertices=null;
+  function write(message){log.textContent+= '\n'+message;}
+  function exportObj(mesh,id){
+    var materials=mesh.material.materials||[],lines=['# Generated with makehuman-js 0.1.3 (AGPL-3.0)','o '+id],vertexOffset=1;
+    mesh.geometry.vertices.forEach(function(v){lines.push('v '+v.x.toFixed(6)+' '+v.y.toFixed(6)+' '+v.z.toFixed(6));});
+    mesh.geometry.faces.forEach(function(face){
+      var material=materials[face.materialIndex]||{},name=material.name||'';
+      if(/^helper|^joint/.test(name))return;
+      lines.push('f '+(face.a+vertexOffset)+' '+(face.b+vertexOffset)+' '+(face.c+vertexOffset));
+    });
+    return lines.join('\n')+'\n';
+  }
+  function bakePresetGeometry(human,preset){
+    var vertices=baseVertices,minimum=Infinity,maximum=-Infinity;
+    vertices.forEach(function(vertex){minimum=Math.min(minimum,vertex.y);maximum=Math.max(maximum,vertex.y);});
+    var heightScale=.89+preset.height*.23,weightDelta=(preset.weight-.5)*.30,ageDelta=(preset.age-34)/100;
+    human.geometry.vertices=vertices.map(function(vertex,index){
+      var ratio=(vertex.y-minimum)/(maximum-minimum),torso=Math.max(0,1-Math.abs(ratio-.47)/.34),head=Math.max(0,(ratio-.70)/.30);
+      var width=1+weightDelta*torso+preset.jaw*.09*head;
+      var depth=1+weightDelta*.72*torso;
+      var faceShift=((index%7)-3)*ageDelta*.004*head;
+      return new THREE.Vector3(vertex.x*width,minimum+(vertex.y-minimum)*heightScale,vertex.z*depth+preset.nose*.075*head+faceShift);
+    });
+    human.mesh.geometry.verticesNeedUpdate=true;
+    human.mesh.geometry.elementsNeedUpdate=true;
+    human.mesh.geometry.computeVertexNormals();
+  }
+  async function exportPreset(human,preset){
+    human.factors.setGender(1);
+    human.factors.setHeight(preset.height);
+    human.factors.setWeight(preset.weight);
+    human.factors.setAgeYears(preset.age);
+    human.targets.lastmorphTargetInfluences=null;
+    bakePresetGeometry(human,preset);
+    var material=human.mesh.material.materials[0];if(material&&material.color)material.color.set(preset.skin);
+    var response=await fetch('/__makehuman-export/'+preset.id+'.obj',{method:'PUT',headers:{'Content-Type':'text/plain;charset=utf-8'},body:exportObj(human.mesh,preset.id)});
+    if(!response.ok)throw new Error(preset.id+' ذخیره نشد: HTTP '+response.status);
+    write('✓ '+preset.id+'.obj ساخته شد');
+  }
+  async function run(){
+    try{
+      var human=new makehuman.Human({baseUrl:'/tools/cache/makehuman-data-package/package/public/data/',model:'human_full_size.json',defaultSkin:'middleage_caucasian_male/middleage_caucasian_male.json'});
+      await human.loadModel(); await human.loadTargets();
+      human.minUpdateInterval=0;
+      human.targets.applyTargets(); human.onElementsNeedUpdate();
+      baseVertices=human.geometry.vertices.map(function(vertex){return vertex.clone();});
+      for(var index=0;index<presets.length;index++)await exportPreset(human,presets[index]);
+      write('تمام شد. شش مدل در tools/raw-character/makehuman-js/ آماده‌اند.');
+    }catch(error){write('✗ خطا: '+error.message);console.error(error);}
+  }
+  run();
+})();
+</script>
