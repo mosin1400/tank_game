@@ -134,6 +134,21 @@ for (const entry of roster.entries) {
   }
 }
 
+for (const id of mainRoles) {
+  assert.equal(
+    byId.get(id)?.geometry,
+    `assets/models/characters/core/${id}.glb`,
+    `${id} must load his authored rigged GLB rather than the generic template`
+  );
+}
+for (const id of secondaryRoles) {
+  assert.equal(
+    byId.get(id)?.geometry,
+    'assets/models/characters/core/player-commander.glb',
+    `${id} must reuse the real shared rigged base until its outfit is generated at runtime`
+  );
+}
+
 for (const [id, body] of Object.entries(namedBodies)) {
   assert.equal(byId.get(id)?.body, body, `${id} must use its approved body class`);
   assert.equal(byId.get(id)?.fallback, null, `${id} must not use a fallback`);
