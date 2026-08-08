@@ -135,6 +135,7 @@ def add_sphere(name, location, scale, mat, armature, bone_name):
 
 def create_outfit(armature, profile):
     """Add a low-poly, emblem-free uniform as bone-attached game accessories."""
+    undershirt = material("outfit_undershirt", (0.56, 0.53, 0.43, 1.0), roughness=0.9)
     uniform = material("outfit_uniform", profile["uniform"], roughness=0.82)
     accent = material("outfit_accent", profile["accent"], metallic=0.15, roughness=0.58)
     dark = material("outfit_boots", (0.035, 0.04, 0.03, 1.0), roughness=0.9)
@@ -142,6 +143,11 @@ def create_outfit(armature, profile):
     head = bone_world(armature, "Head")
     left_leg = bone_world(armature, "LeftUpLeg")
     right_leg = bone_world(armature, "RightUpLeg")
+    # This base garment is deliberately separate from the uniform.  It makes
+    # every baked cast member clothed even when a future gameplay costume is
+    # hidden or exchanged, and it follows the upper torso with the real
+    # Mixamo Spine2 bone.
+    add_box("outfit_undershirt", spine + Vector((0, 0, 0.025)), (0.235, 0.145, 0.355), undershirt, armature, "Spine2")
     add_box("outfit_tunic", spine, (0.26, 0.16, 0.38), uniform, armature, "Spine2")
     add_box("outfit_belt", spine + Vector((0, 0, -0.10)), (0.29, 0.18, 0.035), accent, armature, "Spine2")
     add_box("outfit_trouser_left", left_leg, (0.12, 0.13, 0.34), uniform, armature, "LeftUpLeg")

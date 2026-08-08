@@ -21,7 +21,10 @@ for role in CAST:
     armatures = [obj for obj in bpy.context.scene.objects if obj.type == "ARMATURE"]
     meshes = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
     outfits = [obj for obj in meshes if obj.name.startswith("outfit_")]
+    undershirts = [obj for obj in outfits if obj.name == "outfit_undershirt"]
     assert len(armatures) == 1 and len(armatures[0].data.bones) >= 60, f"bad rig: {role}"
     assert len(outfits) >= 8, f"incomplete outfit: {role}"
+    assert len(undershirts) == 1, f"missing base garment: {role}"
     assert all(item.parent == armatures[0] and item.parent_type == "BONE" for item in outfits), f"unbound outfit: {role}"
+    assert undershirts[0].parent_bone.endswith("Spine2"), f"undershirt not attached to Spine2: {role}"
     print(f"rigged GLB: PASS {role} ({len(armatures[0].data.bones)} bones, {len(outfits)} outfit parts)")
