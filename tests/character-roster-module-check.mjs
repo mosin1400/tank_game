@@ -145,7 +145,32 @@ assertInvalidRoster(
     candidate.entries.find((entry) => entry.id === 'major-mehraz').faceTier = 'full';
   },
   /approved character roster/,
-  'the exact seven full-face roles must be enforced'
+  'the exact six full-face roles must be enforced'
+);
+assertInvalidRoster(
+  (candidate) => { candidate.entries.find((entry) => entry.id === 'arad').tier = 'main'; },
+  /approved character tier/,
+  'only the approved six roles can be main characters'
+);
+assertInvalidRoster(
+  (candidate) => { candidate.entries.find((entry) => entry.id === 'player-commander').appearance.faceMode = 'ambient'; },
+  /approved character face mode/,
+  'main characters must keep cinematic face mode'
+);
+assertInvalidRoster(
+  (candidate) => { candidate.entries.find((entry) => entry.id === 'player-commander').appearance.bodyScale[0] = 1.3; },
+  /Invalid character bodyScale/,
+  'body variation must stay inside the safe range'
+);
+assertInvalidRoster(
+  (candidate) => { candidate.entries.find((entry) => entry.id === 'player-commander').appearance.skinTone = 'olive'; },
+  /Invalid character appearance color/,
+  'appearance colors must use safe hex values'
+);
+assertInvalidRoster(
+  (candidate) => { candidate.entries.find((entry) => entry.id === 'player-commander').appearance.faceMorph.jaw = 2; },
+  /Invalid character faceMorph/,
+  'face morph variation must stay normalized'
 );
 assertInvalidRoster(
   (candidate) => { candidate.entries.find((entry) => entry.id === 'vardan-tanker').fallback = 'missing-role'; },

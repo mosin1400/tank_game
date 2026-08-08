@@ -25,8 +25,16 @@ const clips = [
   'rifle-aim', 'rifle-reload', 'hit-react', 'fall'
 ];
 const fullFaceRoles = [
-  'player-commander', 'ramin', 'saman', 'nikan', 'arad',
-  'shahin-tali', 'general-varen'
+  'player-commander', 'ramin', 'saman', 'nikan', 'shahin-tali', 'general-varen'
+];
+const mainRoles = [
+  'player-commander', 'ramin', 'saman', 'nikan', 'shahin-tali', 'general-varen'
+];
+const secondaryRoles = [
+  'arad', 'major-mehraz', 'soroush-amani', 'mehran', 'nader-rostami',
+  'vardan-rifleman', 'vardan-tanker', 'vardan-engineer',
+  'ash-rifleman', 'ash-elite', 'ash-crew',
+  'convoy-driver', 'mechanic', 'rail-worker', 'resistance', 'medic'
 ];
 const namedBodies = {
   'player-commander': 'medium',
@@ -44,6 +52,8 @@ const namedBodies = {
 const validBodies = new Set(['lean', 'medium', 'heavy']);
 const validFactions = new Set(['vardan', 'ash', 'civilian']);
 const validFaceTiers = new Set(['full', 'simple']);
+const validTiers = new Set(['main', 'secondary']);
+const validFaceModes = new Set(['cinematic', 'ambient']);
 
 assert.equal(roster.schemaVersion, 1, 'roster schema version must be 1');
 assert.deepEqual(roster.motionClips, clips, 'shared motion clip order changed');
@@ -95,6 +105,21 @@ for (const entry of roster.entries) {
   assert.ok(validBodies.has(entry.body), `${entry.id} has invalid body`);
   assert.ok(validFactions.has(entry.faction), `${entry.id} has invalid faction`);
   assert.ok(validFaceTiers.has(entry.faceTier), `${entry.id} has invalid faceTier`);
+  assert.ok(validTiers.has(entry.tier), `${entry.id} has invalid tier`);
+  assert.ok(entry.appearance && typeof entry.appearance === 'object', `${entry.id} needs appearance`);
+  assert.ok(Array.isArray(entry.appearance.bodyScale) && entry.appearance.bodyScale.length === 3,
+    `${entry.id} needs a three-axis bodyScale`);
+  assert.ok(entry.appearance.bodyScale.every((value) => Number.isFinite(value) && value >= 0.85 && value <= 1.15),
+    `${entry.id} bodyScale must stay in safe range`);
+  assert.match(entry.appearance.skinTone, /^#[0-9a-f]{6}$/i, `${entry.id} needs hex skinTone`);
+  assert.ok(entry.appearance.faceMorph && typeof entry.appearance.faceMorph === 'object',
+    `${entry.id} needs faceMorph`);
+  assert.ok(Object.values(entry.appearance.faceMorph).every((value) => Number.isFinite(value) && value >= -1 && value <= 1),
+    `${entry.id} faceMorph values must be normalized`);
+  assert.ok(typeof entry.appearance.outfit === 'string' && entry.appearance.outfit.length > 0,
+    `${entry.id} needs outfit preset`);
+  assert.match(entry.appearance.accentColor, /^#[0-9a-f]{6}$/i, `${entry.id} needs accentColor`);
+  assert.ok(validFaceModes.has(entry.appearance.faceMode), `${entry.id} has invalid faceMode`);
   assert.ok(isLocalAssetUrl(entry.geometry), `${entry.id} geometry must be a local relative asset URL`);
   assert.ok(isLocalAssetUrl(entry.motion), `${entry.id} motion must be a local relative asset URL`);
   assert.ok(clips.includes(entry.defaultState), `${entry.id} has invalid defaultState`);
@@ -132,5 +157,21 @@ assert.deepEqual(
   [...fullFaceRoles].sort(),
   'full facial animation role set changed'
 );
+assert.deepEqual(
+  roster.entries.filter((entry) => entry.tier === 'main').map((entry) => entry.id).sort(),
+  [...mainRoles].sort(),
+  'main character role set changed'
+);
+assert.deepEqual(
+  roster.entries.filter((entry) => entry.tier === 'secondary').map((entry) => entry.id).sort(),
+  [...secondaryRoles].sort(),
+  'secondary character role set changed'
+);
+for (const entry of roster.entries) {
+  assert.equal(entry.faceTier === 'full', entry.tier === 'main',
+    `${entry.id} face tier must match runtime tier`);
+  assert.equal(entry.appearance.faceMode, entry.tier === 'main' ? 'cinematic' : 'ambient',
+    `${entry.id} face mode must match runtime tier`);
+}
 
 console.log('character-roster-contract-check: PASS');

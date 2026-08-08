@@ -10,23 +10,29 @@
   var VALID_FACTIONS={vardan:true,ash:true,civilian:true};
   var VALID_BODIES={lean:true,medium:true,heavy:true};
   var VALID_FACE_TIERS={full:true,simple:true};
+  var VALID_TIERS={main:true,secondary:true};
+  var VALID_FACE_MODES={cinematic:true,ambient:true};
+  var MAIN_ROLE_IDS={
+    'player-commander':true,ramin:true,saman:true,nikan:true,
+    'shahin-tali':true,'general-varen':true
+  };
   var ROLE_FIELDS=['kind','faction','body','faceTier','defaultState'];
   var ROLE_RULES={
     'player-commander':['named','vardan','medium','full','idle',null],
     'ramin':['named','vardan','lean','full','idle',null],
     'saman':['named','vardan','medium','full','idle',null],
     'nikan':['named','vardan','medium','full','idle',null],
-    'arad':['named','vardan','lean','full','idle',null],
+    'arad':['named','vardan','lean','simple','radio',null],
     'major-mehraz':['named','vardan','heavy','simple','idle',null],
-    'shahin-tali':['named','civilian','heavy','full','idle',null],
+    'shahin-tali':['named','civilian','heavy','full','binoculars',null],
     'general-varen':['named','ash','lean','full','idle',null],
-    'soroush-amani':['named','vardan','lean','simple','idle',null],
-    'mehran':['named','vardan','heavy','simple','idle',null],
-    'nader-rostami':['named','vardan','medium','simple','idle',null],
-    'vardan-rifleman':['soldier','vardan','medium','simple','idle',null],
+    'soroush-amani':['named','vardan','lean','simple','binoculars',null],
+    'mehran':['named','vardan','heavy','simple','repair',null],
+    'nader-rostami':['named','vardan','medium','simple','hatch-idle',null],
+    'vardan-rifleman':['soldier','vardan','medium','simple','rifle-aim',null],
     'vardan-tanker':['soldier','vardan','medium','simple','hatch-idle','vardan-rifleman'],
     'vardan-engineer':['soldier','vardan','heavy','simple','repair','vardan-rifleman'],
-    'ash-rifleman':['soldier','ash','medium','simple','idle',null],
+    'ash-rifleman':['soldier','ash','medium','simple','rifle-aim',null],
     'ash-elite':['soldier','ash','heavy','simple','rifle-aim','ash-rifleman'],
     'ash-crew':['soldier','ash','lean','simple','repair','ash-rifleman'],
     'convoy-driver':['general','civilian','medium','simple','driver-sit',null],
@@ -99,6 +105,29 @@
       parts[2]==='characters';
   }
 
+  function isHexColor(value){
+    return typeof value==='string' && /^#[0-9a-f]{6}$/i.test(value);
+  }
+
+  function assertAppearance(entry){
+    var appearance=entry.appearance;
+    if(!isPlainObject(appearance))throw new Error('Invalid character appearance: '+entry.id);
+    if(!Array.isArray(appearance.bodyScale) || appearance.bodyScale.length!==3 ||
+      appearance.bodyScale.some(function(value){
+        return typeof value!=='number' || !isFinite(value) || value<0.85 || value>1.15;
+      }))throw new Error('Invalid character bodyScale: '+entry.id);
+    if(!isHexColor(appearance.skinTone) || !isHexColor(appearance.accentColor)){
+      throw new Error('Invalid character appearance color: '+entry.id);
+    }
+    if(!isPlainObject(appearance.faceMorph) || Object.keys(appearance.faceMorph).length===0 ||
+      Object.keys(appearance.faceMorph).some(function(key){
+        var value=appearance.faceMorph[key];
+        return !/^[a-z][a-z0-9-]*$/.test(key) || typeof value!=='number' || !isFinite(value) || value<-1 || value>1;
+      }))throw new Error('Invalid character faceMorph: '+entry.id);
+    if(!isNonEmptyString(appearance.outfit))throw new Error('Invalid character outfit: '+entry.id);
+    if(!VALID_FACE_MODES[appearance.faceMode])throw new Error('Invalid character faceMode: '+entry.id);
+  }
+
   function sameArray(left,right){
     if(!Array.isArray(left) || left.length!==right.length)return false;
     for(var i=0;i<right.length;i++){
@@ -116,6 +145,7 @@
     if(!VALID_FACTIONS[entry.faction])throw new Error('Invalid character faction: '+entry.id);
     if(!VALID_BODIES[entry.body])throw new Error('Invalid character body: '+entry.id);
     if(!VALID_FACE_TIERS[entry.faceTier])throw new Error('Invalid character faceTier: '+entry.id);
+    if(!VALID_TIERS[entry.tier])throw new Error('Invalid character tier: '+entry.id);
     if(!isLocalAssetUrl(entry.geometry))throw new Error('Invalid character geometry URL: '+entry.id);
     if(!isLocalAssetUrl(entry.motion))throw new Error('Invalid character motion URL: '+entry.id);
     if(!clipSet[entry.defaultState])throw new Error('Invalid character defaultState: '+entry.id);
@@ -130,6 +160,7 @@
     })){
       throw new Error('Invalid character gear: '+entry.id);
     }
+    assertAppearance(entry);
   }
 
   function validateClone(data){
@@ -179,6 +210,14 @@
     data.entries.forEach(function(entry){
       if(entry.fallback!==ROLE_RULES[entry.id][5]){
         throw new Error('Invalid approved fallback root: '+entry.id);
+      }
+      var isMain=!!MAIN_ROLE_IDS[entry.id];
+      if(entry.tier!==(isMain?'main':'secondary')){
+        throw new Error('Invalid approved character tier: '+entry.id);
+      }
+      if(entry.faceTier!==(isMain?'full':'simple') ||
+        entry.appearance.faceMode!==(isMain?'cinematic':'ambient')){
+        throw new Error('Invalid approved character face mode: '+entry.id);
       }
     });
     return data;
