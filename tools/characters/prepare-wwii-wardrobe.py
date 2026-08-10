@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from array import array
 import shutil
+import struct
 import tempfile
 import zipfile
+import zlib
 from pathlib import Path
 
 import bpy
@@ -70,6 +73,25 @@ def image_nodes(material: bpy.types.Material) -> list[bpy.types.Node]:
     if not material or not material.use_nodes or not material.node_tree:
         return []
     return [node for node in material.node_tree.nodes if node.type == "TEX_IMAGE" and node.image]
+
+
+def write_rgba_png(path: Path, width: int, height: int, pixels: list[float]) -> None:
+    """Write the computed map bytes deterministically before Blender packs that exact file."""
+    rows = bytearray()
+    for y in range(height - 1, -1, -1):
+        rows.append(0)
+        start = y * width * 4
+        rows.extend(round(max(0.0, min(1.0, value)) * 255) for value in pixels[start:start + width * 4])
+
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+
+    path.write_bytes(
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+        + chunk(b"IDAT", zlib.compress(bytes(rows), level=9))
+        + chunk(b"IEND", b"")
+    )
 
 
 def material_images(obj: bpy.types.Object) -> set[str]:
@@ -274,13 +296,18 @@ def derive_pbr_maps(material: bpy.types.Material) -> None:
     diffuse = next((node for node in image_nodes(material) if "derived_" not in node.image.name.lower()), None)
     if not principled or not diffuse:
         raise RuntimeError(f"{material.name} lacks a licensed diffuse image for PBR derivation")
-    sample = diffuse.image.copy()
-    sample.scale(min(256, sample.size[0]), min(256, sample.size[1]))
-    width, height = sample.size
-    source = [0.0] * (width * height * 4)
-    sample.pixels.foreach_get(source)
+    width = height = 256
+    source_width, source_height = diffuse.image.size
+    source = array("f", [0.0]) * (source_width * source_height * 4)
+    diffuse.image.pixels.foreach_get(source)
     roughness, metallic, normal = [], [], []
-    luminance = [source[index] * .2126 + source[index + 1] * .7152 + source[index + 2] * .0722 for index in range(0, len(source), 4)]
+    luminance = []
+    for y in range(height):
+        source_y = min(source_height - 1, int((y + .5) * source_height / height))
+        for x in range(width):
+            source_x = min(source_width - 1, int((x + .5) * source_width / width))
+            index = (source_y * source_width + source_x) * 4
+            luminance.append(source[index] * .2126 + source[index + 1] * .7152 + source[index + 2] * .0722)
     for y in range(height):
         for x in range(width):
             index = y * width + x
@@ -297,13 +324,12 @@ def derive_pbr_maps(material: bpy.types.Material) -> None:
     generated = {}
     filenames = []
     for role, pixels in (("derived_normal", normal), ("derived_roughness", roughness), ("derived_metallic", metallic)):
-        image = bpy.data.images.new(f"{diffuse.image.name}_{role}", width=width, height=height, alpha=False)
-        image.pixels.foreach_set(pixels)
-        image.colorspace_settings.name = "Non-Color"
         filename = f"{Path(diffuse.image.name).stem}__{role}.png"
-        image.filepath_raw = str(PBR_ROOT / filename)
-        image.file_format = "PNG"
-        image.save()
+        path = PBR_ROOT / filename
+        write_rgba_png(path, width, height, pixels)
+        image = bpy.data.images.load(str(path), check_existing=False)
+        image.name = f"{diffuse.image.name}_{role}"
+        image.colorspace_settings.name = "Non-Color"
         image.pack()
         node = nodes.new("ShaderNodeTexImage")
         node.name = role
@@ -319,7 +345,6 @@ def derive_pbr_maps(material: bpy.types.Material) -> None:
     links.new(generated["derived_metallic"].outputs["Color"], principled.inputs["Metallic"])
     material["generated_pbr_files"] = "|".join(filenames)
     material["generated_pbr_source"] = diffuse.image.name
-    bpy.data.images.remove(sample)
 
 
 def join_as(category: str, objects: list[bpy.types.Object]) -> bpy.types.Object:

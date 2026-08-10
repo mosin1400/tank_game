@@ -14,6 +14,43 @@ REQUIRED = {
     "wardrobe_boot_right", "wardrobe_belt", "wardrobe_headgear",
     "wardrobe_role_kit",
 }
+AUTHORIZED_ATLASES = {
+    "sov_soldier_0_co.png",
+    "sov_eqipment_0_co.png",
+    "sov_eqipment_1_co.png",
+}
+PBR_ROLES = ("normal", "roughness", "metallic")
+
+
+def pixels_from_file(path):
+    image = bpy.data.images.load(str(path), check_existing=False)
+    try:
+        assert tuple(image.size) == (256, 256), f"{path.name} is not a 256px derived map"
+        image.colorspace_settings.name = "Non-Color"
+        pixels = [0.0] * (image.size[0] * image.size[1] * 4)
+        image.pixels.foreach_get(pixels)
+        return pixels
+    finally:
+        bpy.data.images.remove(image)
+
+
+authorized_files = {
+    (atlas, role): PBR_ROOT / f"{Path(atlas).stem}__derived_{role}.png"
+    for atlas in AUTHORIZED_ATLASES
+    for role in PBR_ROLES
+}
+assert all(path.is_file() for path in authorized_files.values()), "authorized generated-PBR set is incomplete"
+assert len({path.read_bytes() for path in authorized_files.values()}) == len(authorized_files), "authorized PBR maps are byte-identical"
+authorized_pixels = {}
+for (atlas, role), path in authorized_files.items():
+    pixels = pixels_from_file(path)
+    authorized_pixels[(atlas, role)] = pixels
+    red, green, blue = pixels[0::4], pixels[1::4], pixels[2::4]
+    assert max(red + green + blue) - min(red + green + blue) > .005, f"{path.name} contains blank or constant RGB data"
+    if role == "normal":
+        assert min(blue) > .9 and max(red) - min(red) > .002 and max(green) - min(green) > .002, f"{path.name} lacks diffuse-derived normal variation"
+    else:
+        assert max(abs(r - g) for r, g in zip(red, green)) < 1e-5 and max(abs(r - b) for r, b in zip(red, blue)) < 1e-5, f"{path.name} is not a scalar {role} map"
 
 assert TARGET.is_file(), "normalized donor GLB is missing"
 assert PROOF.is_file() and PROOF.stat().st_size > 8_000, "CPU visual proof is missing"
@@ -47,6 +84,23 @@ def triangle_signatures(mesh):
     }
 
 
+def linked_source(socket, message):
+    assert socket.is_linked and len(socket.links) == 1, message
+    link = socket.links[0]
+    return link.from_node, link.from_socket
+
+
+def image_pixels(image):
+    assert tuple(image.size) == (256, 256), f"{image.name} is not the authorized PBR resolution"
+    pixels = [0.0] * (image.size[0] * image.size[1] * 4)
+    image.pixels.foreach_get(pixels)
+    return pixels
+
+
+def channel_delta(actual, actual_channel, expected, expected_channel):
+    return max(abs(actual[index + actual_channel] - expected[index + expected_channel]) for index in range(0, len(actual), 4))
+
+
 for name in REQUIRED:
     mesh = meshes[name]
     assert len(mesh.data.vertices) < SOURCE_VERTICES * .8, f"{name} retains near-full donor vertices"
@@ -74,19 +128,46 @@ for mesh in meshes.values():
         nodes = material.node_tree.nodes
         principled = next((node for node in nodes if node.type == "BSDF_PRINCIPLED"), None)
         assert principled, f"{material.name} lacks Principled BSDF"
-        assert principled.inputs["Base Color"].is_linked and principled.inputs["Base Color"].links[0].from_node.type == "TEX_IMAGE", f"{material.name} diffuse image is unbound"
-        roughness = principled.inputs["Roughness"].links[0].from_node if principled.inputs["Roughness"].is_linked else None
-        metallic = principled.inputs["Metallic"].links[0].from_node if principled.inputs["Metallic"].is_linked else None
-        assert roughness and roughness.type in {"TEX_IMAGE", "SEPARATE_COLOR"}, f"{material.name} roughness image is unbound"
-        assert metallic and metallic.type in {"TEX_IMAGE", "SEPARATE_COLOR"}, f"{material.name} metallic image is unbound"
-        normal = principled.inputs["Normal"].links[0].from_node if principled.inputs["Normal"].is_linked else None
-        assert normal and normal.type == "NORMAL_MAP" and normal.inputs["Color"].is_linked and normal.inputs["Color"].links[0].from_node.type == "TEX_IMAGE", f"{material.name} normal image is unbound"
+        diffuse, diffuse_output = linked_source(principled.inputs["Base Color"], f"{material.name} diffuse image is unbound")
+        assert diffuse.type == "TEX_IMAGE" and diffuse_output.name == "Color", f"{material.name} diffuse does not use image color"
+        normal, normal_output = linked_source(principled.inputs["Normal"], f"{material.name} normal map is unbound")
+        assert normal.type == "NORMAL_MAP" and normal_output.name == "Normal", f"{material.name} normal input bypasses Normal Map"
+        normal_image, normal_image_output = linked_source(normal.inputs["Color"], f"{material.name} normal image is unbound")
+        assert normal_image.type == "TEX_IMAGE" and normal_image_output.name == "Color", f"{material.name} normal map lacks image color"
+        roughness, roughness_output = linked_source(principled.inputs["Roughness"], f"{material.name} roughness image is unbound")
+        metallic, metallic_output = linked_source(principled.inputs["Metallic"], f"{material.name} metallic image is unbound")
+        if roughness.type == "SEPARATE_COLOR":
+            assert roughness_output.name == "Green", f"{material.name} uses the wrong glTF roughness channel"
+            roughness_image, roughness_image_output = linked_source(roughness.inputs["Color"], f"{material.name} packed roughness image is unbound")
+            roughness_channel = 1
+        else:
+            assert roughness.type == "TEX_IMAGE" and roughness_output.name == "Color", f"{material.name} roughness lacks a direct or packed image"
+            roughness_image, roughness_image_output, roughness_channel = roughness, roughness_output, 0
+        if metallic.type == "SEPARATE_COLOR":
+            assert metallic_output.name == "Blue", f"{material.name} uses the wrong glTF metallic channel"
+            metallic_image, metallic_image_output = linked_source(metallic.inputs["Color"], f"{material.name} packed metallic image is unbound")
+            metallic_channel = 2
+        else:
+            assert metallic.type == "TEX_IMAGE" and metallic_output.name == "Color", f"{material.name} metallic lacks a direct or packed image"
+            metallic_image, metallic_image_output, metallic_channel = metallic, metallic_output, 0
+        assert roughness_image.type == "TEX_IMAGE" and roughness_image_output.name == "Color", f"{material.name} roughness lacks an image source"
+        assert metallic_image.type == "TEX_IMAGE" and metallic_image_output.name == "Color", f"{material.name} metallic lacks an image source"
         image_names = {node.image.name.lower() for node in nodes if node.type == "TEX_IMAGE" and node.image}
         assert len(image_names) >= 3, f"{material.name} lacks diffuse plus derived normal/roughness/metallic images"
         assert not any("hhl_01" in name or "mouth_co" in name for name in image_names), f"{material.name} retains body or mouth atlas"
         generated = material.get("generated_pbr_files")
         assert generated, f"{material.name} lacks authorized generated-PBR provenance"
-        expected_paths = [PBR_ROOT / name for name in generated.split("|")]
-        assert all(path.is_file() and path.stat().st_size > 1_000 for path in expected_paths), f"{material.name} generated-PBR files are missing"
-        assert all("__derived_" in path.name for path in expected_paths), f"{material.name} PBR maps are not named as derived maps"
+        source_atlas = material.get("generated_pbr_source")
+        assert source_atlas in AUTHORIZED_ATLASES, f"{material.name} names an unauthorized PBR source atlas"
+        expected_names = [authorized_files[(source_atlas, role)].name for role in PBR_ROLES]
+        assert generated.split("|") == expected_names, f"{material.name} generated-PBR roles do not match {source_atlas}"
+        assert Path(source_atlas).stem.lower() in diffuse.image.name.lower(), f"{material.name} diffuse node does not match its authorized source atlas"
+        normal_actual = image_pixels(normal_image.image)
+        roughness_actual = image_pixels(roughness_image.image)
+        metallic_actual = image_pixels(metallic_image.image)
+        assert channel_delta(normal_actual, 0, authorized_pixels[(source_atlas, "normal")], 0) <= 1 / 255, f"{material.name} normal R is not the authorized generated map"
+        assert channel_delta(normal_actual, 1, authorized_pixels[(source_atlas, "normal")], 1) <= 1 / 255, f"{material.name} normal G is not the authorized generated map"
+        assert channel_delta(normal_actual, 2, authorized_pixels[(source_atlas, "normal")], 2) <= 1 / 255, f"{material.name} normal B is not the authorized generated map"
+        assert channel_delta(roughness_actual, roughness_channel, authorized_pixels[(source_atlas, "roughness")], 0) <= 1 / 255, f"{material.name} roughness input is not the authorized generated map"
+        assert channel_delta(metallic_actual, metallic_channel, authorized_pixels[(source_atlas, "metallic")], 0) <= 1 / 255, f"{material.name} metallic input is not the authorized generated map"
 print("verify-wwii-donor: PASS")
