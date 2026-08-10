@@ -8,12 +8,17 @@ transfers its vertex weights to the five matching MakeHuman JS source meshes.
 No network access and no Blender add-on are required.
 """
 
+import argparse
 from pathlib import Path
+import sys
 import bpy
 from mathutils import Vector
 
 
 ROOT = Path(__file__).resolve().parents[2]
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
 RAW = ROOT / "tools" / "raw-character"
 RIGGED_SOURCE = RAW / "mixamo" / "player-commander-rigged.fbx"
 MAKEHUMAN_SOURCE = RAW / "makehuman-js"
@@ -65,9 +70,13 @@ def reset_scene():
 def import_fbx(path):
     bpy.ops.import_scene.fbx(filepath=str(path), use_anim=True)
     armature = next((obj for obj in bpy.context.scene.objects if obj.type == "ARMATURE"), None)
-    mesh = next((obj for obj in bpy.context.scene.objects if obj.type == "MESH"), None)
-    if armature is None or mesh is None:
+    meshes = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
+    if armature is None or not meshes:
         raise RuntimeError(f"Mixamo file needs an armature and skinned mesh: {path}")
+    mesh = max(meshes, key=lambda obj: len(obj.data.vertices))
+    for extra in meshes:
+        if extra != mesh:
+            bpy.data.objects.remove(extra, do_unlink=True)
     return armature, mesh
 
 
@@ -97,65 +106,153 @@ def bone_world(armature, bone_name):
     return armature.matrix_world @ bone.head
 
 
+def body_world_bounds(body):
+    """Return the visible body's world-space bounds after the rig transform."""
+    bpy.context.view_layer.update()
+    points = [body.matrix_world @ Vector(corner) for corner in body.bound_box]
+    low = Vector(tuple(min(point[axis] for point in points) for axis in range(3)))
+    high = Vector(tuple(max(point[axis] for point in points) for axis in range(3)))
+    return low, high
+
+
 def mixamo_bone(armature, bone_name):
     """Resolve short semantic names against Mixamo's exported bone prefix."""
     prefixed = f"mixamorig:{bone_name}"
     return prefixed if armature.pose.bones.get(prefixed) else bone_name
 
 
-def add_box(name, location, scale, mat, armature, bone_name):
+def skin_prop(obj, armature, body, bone_name):
+    """Convert a world-placed prop into body-local geometry weighted to one bone."""
+    body_from_prop = body.matrix_world.inverted() @ obj.matrix_world
+    obj.data.transform(body_from_prop)
+    obj.parent = body.parent
+    obj.parent_type = "OBJECT"
+    obj.matrix_parent_inverse = body.matrix_parent_inverse.copy()
+    obj.matrix_basis = body.matrix_basis.copy()
+    group = obj.vertex_groups.new(name=mixamo_bone(armature, bone_name))
+    group.add(list(range(len(obj.data.vertices))), 1.0, "REPLACE")
+    modifier = obj.modifiers.new("mixamo_armature", "ARMATURE")
+    modifier.object = armature
+    return obj
+
+
+def add_box(name, location, scale, mat, armature, body, bone_name):
     bpy.ops.mesh.primitive_cube_add(location=location)
     obj = bpy.context.object
     obj.name = name
     obj.scale = scale
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    bevel = obj.modifiers.new("soft_edges", "BEVEL")
+    bevel.width = 0.02
+    bevel.segments = 2
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.modifier_apply(modifier=bevel.name)
     obj.data.materials.append(mat)
-    bone_name = mixamo_bone(armature, bone_name)
-    obj.parent = armature
-    obj.parent_type = "BONE"
-    obj.parent_bone = bone_name
-    obj.matrix_parent_inverse = armature.matrix_world.inverted()
-    return obj
+    return skin_prop(obj, armature, body, bone_name)
 
 
-def add_sphere(name, location, scale, mat, armature, bone_name):
+def add_sphere(name, location, scale, mat, armature, body, bone_name):
     bpy.ops.mesh.primitive_uv_sphere_add(segments=16, ring_count=8, location=location)
     obj = bpy.context.object
     obj.name = name
     obj.scale = scale
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     obj.data.materials.append(mat)
-    bone_name = mixamo_bone(armature, bone_name)
-    obj.parent = armature
-    obj.parent_type = "BONE"
-    obj.parent_bone = bone_name
-    obj.matrix_parent_inverse = armature.matrix_world.inverted()
-    return obj
+    return skin_prop(obj, armature, body, bone_name)
 
 
-def create_outfit(armature, profile):
-    """Add a low-poly, emblem-free uniform as bone-attached game accessories."""
+def add_torus(name, location, scale, mat, armature, body, bone_name):
+    bpy.ops.mesh.primitive_torus_add(
+        major_segments=24, minor_segments=6, major_radius=1.0, minor_radius=0.12,
+        location=location,
+    )
+    obj = bpy.context.object
+    obj.name = name
+    obj.scale = scale
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    obj.data.materials.append(mat)
+    return skin_prop(obj, armature, body, bone_name)
+
+
+def fitted_garment(body, armature, name, bone_names, mat, thickness=0.12):
+    """Extract a body-conforming, skinned garment from weighted body faces."""
+    wanted = {mixamo_bone(armature, bone_name) for bone_name in bone_names}
+    selected = set()
+    for vertex in body.data.vertices:
+        if any(
+            body.vertex_groups[assignment.group].name in wanted and assignment.weight >= 0.08
+            for assignment in vertex.groups
+        ):
+            selected.add(vertex.index)
+
+    polygons = [poly for poly in body.data.polygons if all(index in selected for index in poly.vertices)]
+    used = sorted({index for poly in polygons for index in poly.vertices})
+    if len(used) < 100:
+        raise RuntimeError(f"Not enough fitted garment vertices for {name}: {len(used)}")
+    remap = {old: new for new, old in enumerate(used)}
+    mesh = bpy.data.meshes.new(f"{name}_mesh")
+    mesh.from_pydata(
+        [body.data.vertices[index].co.copy() for index in used],
+        [],
+        [[remap[index] for index in poly.vertices] for poly in polygons],
+    )
+    mesh.update()
+    garment = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(garment)
+    garment.parent = body.parent
+    garment.parent_type = "OBJECT"
+    garment.matrix_parent_inverse = body.matrix_parent_inverse.copy()
+    garment.matrix_basis = body.matrix_basis.copy()
+    garment.data.materials.append(mat)
+
+    for source_group in body.vertex_groups:
+        garment.vertex_groups.new(name=source_group.name)
+    for new_index, old_index in enumerate(used):
+        for assignment in body.data.vertices[old_index].groups:
+            group_name = body.vertex_groups[assignment.group].name
+            garment.vertex_groups[group_name].add([new_index], assignment.weight, "REPLACE")
+
+    solidify = garment.modifiers.new("cloth_thickness", "SOLIDIFY")
+    solidify.thickness = thickness
+    solidify.offset = 1.0
+    bpy.context.view_layer.objects.active = garment
+    garment.select_set(True)
+    bpy.ops.object.modifier_apply(modifier=solidify.name)
+    garment.select_set(False)
+    armature_modifier = garment.modifiers.new("mixamo_armature", "ARMATURE")
+    armature_modifier.object = armature
+    return garment
+
+
+def create_outfit(armature, body, profile):
+    """Build fitted, skinned clothes plus small role-specific accessories."""
     undershirt = material("outfit_undershirt", (0.56, 0.53, 0.43, 1.0), roughness=0.9)
     uniform = material("outfit_uniform", profile["uniform"], roughness=0.82)
     accent = material("outfit_accent", profile["accent"], metallic=0.15, roughness=0.58)
     dark = material("outfit_boots", (0.035, 0.04, 0.03, 1.0), roughness=0.9)
-    spine = bone_world(armature, "Spine2")
-    head = bone_world(armature, "Head")
-    left_leg = bone_world(armature, "LeftUpLeg")
-    right_leg = bone_world(armature, "RightUpLeg")
-    # This base garment is deliberately separate from the uniform.  It makes
-    # every baked cast member clothed even when a future gameplay costume is
-    # hidden or exchanged, and it follows the upper torso with the real
-    # Mixamo Spine2 bone.
-    add_box("outfit_undershirt", spine + Vector((0, 0, 0.025)), (0.235, 0.145, 0.355), undershirt, armature, "Spine2")
-    add_box("outfit_tunic", spine, (0.26, 0.16, 0.38), uniform, armature, "Spine2")
-    add_box("outfit_belt", spine + Vector((0, 0, -0.10)), (0.29, 0.18, 0.035), accent, armature, "Spine2")
-    add_box("outfit_trouser_left", left_leg, (0.12, 0.13, 0.34), uniform, armature, "LeftUpLeg")
-    add_box("outfit_trouser_right", right_leg, (0.12, 0.13, 0.34), uniform, armature, "RightUpLeg")
-    add_box("outfit_boot_left", left_leg + Vector((0, 0.03, -0.36)), (0.14, 0.22, 0.09), dark, armature, "LeftLeg")
-    add_box("outfit_boot_right", right_leg + Vector((0, 0.03, -0.36)), (0.14, 0.22, 0.09), dark, armature, "RightLeg")
-    add_sphere(f"outfit_{profile['cap']}", head + Vector((0, 0, 0.10)), (0.20, 0.20, 0.07), uniform, armature, "Head")
-    add_box(f"outfit_{profile['kit']}", spine + Vector((0.30, 0.02, -0.08)), (0.09, 0.06, 0.13), accent, armature, "Spine2")
+    body_low, body_high = body_world_bounds(body)
+    body_center = (body_low + body_high) * 0.5
+    body_height = body_high.z - body_low.z
+    waist = Vector((body_center.x, body_center.y, body_low.z + body_height * 0.50))
+    head = Vector((body_center.x, body_center.y, body_high.z - 0.025))
+    kit = Vector((body_center.x + 0.30, body_center.y + 0.02, body_low.z + body_height * 0.58))
+    fitted_garment(
+        body, armature, "outfit_undershirt",
+        ("Spine", "Spine1", "Spine2", "Neck", "LeftShoulder", "RightShoulder", "LeftArm", "RightArm"),
+        undershirt, 0.08,
+    )
+    fitted_garment(
+        body, armature, "outfit_tunic",
+        ("Hips", "Spine", "Spine1", "Spine2", "LeftShoulder", "RightShoulder", "LeftArm", "RightArm"),
+        uniform, 0.16,
+    )
+    fitted_garment(body, armature, "outfit_trouser_left", ("LeftUpLeg", "LeftLeg"), uniform, 0.11)
+    fitted_garment(body, armature, "outfit_trouser_right", ("RightUpLeg", "RightLeg"), uniform, 0.11)
+    fitted_garment(body, armature, "outfit_boot_left", ("LeftLeg", "LeftFoot", "LeftToeBase"), dark, 0.14)
+    fitted_garment(body, armature, "outfit_boot_right", ("RightLeg", "RightFoot", "RightToeBase"), dark, 0.14)
+    add_torus("outfit_belt", waist, (0.27, 0.15, 0.10), accent, armature, body, "Hips")
+    add_sphere(f"outfit_{profile['cap']}", head, (0.16, 0.15, 0.055), uniform, armature, body, "Head")
+    add_box(f"outfit_{profile['kit']}", kit, (0.09, 0.06, 0.13), accent, armature, body, "Spine2")
 
 
 def copy_weights_by_index(source, target):
@@ -171,32 +268,40 @@ def copy_weights_by_index(source, target):
     return True
 
 
-def transfer_weights(source, target, armature):
-    """Prefer identical MakeHuman topology; retain DATA_TRANSFER fallback for safety."""
-    if not copy_weights_by_index(source, target):
-        transfer = target.modifiers.new("mixamo_weight_transfer", "DATA_TRANSFER")
-        transfer.object = source
-        transfer.use_vert_data = True
-        transfer.data_types_verts = {"VGROUP_WEIGHTS"}
-        bpy.context.view_layer.objects.active = target
-        bpy.ops.object.modifier_apply(modifier=transfer.name)
-    armature_modifier = target.modifiers.new("mixamo_armature", "ARMATURE")
-    armature_modifier.object = armature
-    target.parent = armature
+def skinned_variant(source, variant_obj, role):
+    """Reuse the proven Mixamo bind data and replace only same-topology coordinates."""
+    if len(source.data.vertices) != len(variant_obj.data.vertices):
+        raise RuntimeError(f"Topology mismatch for {role}")
+    target = source.copy()
+    target.data = source.data.copy()
+    bpy.context.collection.objects.link(target)
+    target.name = f"{role}_body"
+    for index, vertex in enumerate(variant_obj.data.vertices):
+        target.data.vertices[index].co = vertex.co
+    return target
 
 
 def build(role, profile):
     reset_scene()
     armature, source_mesh = import_fbx(RIGGED_SOURCE)
     armature.name = "mixamo_rig"
+    # Mixamo returned the MakeHuman JS source at one tenth of a normal human
+    # size.  Scale the complete bound hierarchy once; never scale loose OBJ
+    # geometry independently from its bind matrices.
+    armature.scale *= 10.0
+    if armature.animation_data:
+        armature.animation_data_clear()
+    for pose_bone in armature.pose.bones:
+        pose_bone.matrix_basis.identity()
+    variant_obj = import_obj(MAKEHUMAN_SOURCE / f"{role}.obj")
+    character_mesh = skinned_variant(source_mesh, variant_obj, role)
+    bpy.data.objects.remove(variant_obj, do_unlink=True)
+    bpy.data.objects.remove(source_mesh, do_unlink=True)
     if role == "player-commander":
-        character_mesh = source_mesh
+        from wardrobe_fitter import fit_wardrobe
+        fit_wardrobe(character_mesh, armature, role)
     else:
-        character_mesh = import_obj(MAKEHUMAN_SOURCE / f"{role}.obj")
-        character_mesh.name = f"{role}_body"
-        transfer_weights(source_mesh, character_mesh, armature)
-        bpy.data.objects.remove(source_mesh, do_unlink=True)
-    create_outfit(armature, profile)
+        create_outfit(armature, character_mesh, profile)
     armature["character_id"] = role
     armature["display_name"] = profile["label"]
     armature["outfit_id"] = profile["cap"]
@@ -205,18 +310,27 @@ def build(role, profile):
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.export_scene.gltf(
         filepath=str(target), export_format="GLB", use_selection=True,
-        export_animations=True, export_skins=True, export_morph=True,
-        export_materials="EXPORT", export_yup=True,
+        export_animations=False, export_skins=True, export_morph=True,
+        export_materials="EXPORT", export_yup=True, export_extras=True,
     )
     print(f"Built {role}: {target}")
+
+
+def requested_roles():
+    script_args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--role", choices=CAST)
+    args = parser.parse_args(script_args)
+    return (args.role,) if args.role else CAST
 
 
 def main():
     if not RIGGED_SOURCE.is_file():
         raise FileNotFoundError(f"Expected Mixamo rig: {RIGGED_SOURCE}")
-    for role, profile in CAST.items():
+    for role in requested_roles():
+        profile = CAST[role]
         source = MAKEHUMAN_SOURCE / f"{role}.obj"
-        if role != "player-commander" and not source.is_file():
+        if not source.is_file():
             raise FileNotFoundError(f"Expected MakeHuman source: {source}")
         build(role, profile)
 
