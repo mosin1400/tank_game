@@ -8,6 +8,7 @@ import zipfile
 from pathlib import Path
 
 import bpy
+import bmesh
 from mathutils import Vector
 
 
@@ -151,38 +152,59 @@ def uniform_island_category(box: tuple[float, float, float, float]) -> str | Non
 def extract_selected_faces(source: bpy.types.Object, face_indices: set[int], label: str, proof: str) -> bpy.types.Object:
     if not face_indices:
         raise RuntimeError(f"unresolved semantic donor category: {label}")
-    copy = source.copy()
-    copy.data = source.data.copy()
-    copy.name = label
-    bpy.context.collection.objects.link(copy)
-    for polygon in copy.data.polygons:
-        polygon.select = polygon.index in face_indices
-    before = set(bpy.context.scene.objects)
-    bpy.ops.object.select_all(action="DESELECT")
-    copy.select_set(True)
-    bpy.context.view_layer.objects.active = copy
-    bpy.ops.object.mode_set(mode="EDIT")
-    bpy.ops.mesh.separate(type="SELECTED")
-    bpy.ops.object.mode_set(mode="OBJECT")
-    parts = [obj for obj in bpy.context.scene.objects if obj not in before]
-    bpy.data.objects.remove(copy, do_unlink=True)
-    if len(parts) != 1:
-        raise RuntimeError(f"could not isolate semantic donor category: {label}")
-    part = parts[0]
+    bm = bmesh.new()
+    bm.from_mesh(source.data)
+    rejected = [face for face in bm.faces if face.index not in face_indices]
+    if rejected:
+        bmesh.ops.delete(bm, geom=rejected, context="FACES")
+    loose = [vertex for vertex in bm.verts if not vertex.link_faces]
+    if loose:
+        bmesh.ops.delete(bm, geom=loose, context="VERTS")
+    data = bpy.data.meshes.new(label)
+    bm.to_mesh(data)
+    bm.free()
+    for material in source.data.materials:
+        data.materials.append(material)
+    data.update()
+    if not data.polygons or not data.vertices:
+        bpy.data.meshes.remove(data)
+        raise RuntimeError(f"semantic donor category has no geometry: {label}")
+    part = bpy.data.objects.new(label, data)
+    bpy.context.collection.objects.link(part)
+    part.matrix_world = source.matrix_world.copy()
     part.name = label
     part["donor_proof"] = proof
     return part
 
 
 def split_loose_parts(obj: bpy.types.Object) -> list[bpy.types.Object]:
-    before = set(bpy.context.scene.objects)
-    bpy.ops.object.select_all(action="DESELECT")
-    obj.select_set(True)
-    bpy.context.view_layer.objects.active = obj
-    bpy.ops.object.mode_set(mode="EDIT")
-    bpy.ops.mesh.separate(type="LOOSE")
-    bpy.ops.object.mode_set(mode="OBJECT")
-    return [obj, *(candidate for candidate in bpy.context.scene.objects if candidate not in before)]
+    by_vertex: dict[int, list[int]] = {}
+    for polygon in obj.data.polygons:
+        for vertex in polygon.vertices:
+            by_vertex.setdefault(vertex, []).append(polygon.index)
+    parent = list(range(len(obj.data.polygons)))
+
+    def find(index: int) -> int:
+        while parent[index] != index:
+            parent[index] = parent[parent[index]]
+            index = parent[index]
+        return index
+
+    def union(left: int, right: int) -> None:
+        left, right = find(left), find(right)
+        if left != right:
+            parent[right] = left
+
+    for polygons in by_vertex.values():
+        for polygon in polygons[1:]:
+            union(polygons[0], polygon)
+    components: dict[int, set[int]] = {}
+    for polygon in obj.data.polygons:
+        components.setdefault(find(polygon.index), set()).add(polygon.index)
+    proof = obj.get("donor_proof", "split donor component")
+    parts = [extract_selected_faces(obj, faces, f"{obj.name}_part", proof) for faces in components.values()]
+    bpy.data.objects.remove(obj, do_unlink=True)
+    return parts
 
 
 def choose_largest(candidates: list[bpy.types.Object], amount: int = 1) -> list[bpy.types.Object]:
