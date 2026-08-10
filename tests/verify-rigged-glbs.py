@@ -1,6 +1,8 @@
 """Run inside Blender: verify the built main cast has usable rigs and outfits."""
 
 import argparse
+import hashlib
+import json
 from pathlib import Path
 import sys
 import bpy
@@ -9,6 +11,29 @@ from mathutils import Vector
 
 ROOT = Path(__file__).resolve().parents[1]
 CAST = ("player-commander", "ramin", "saman", "nikan", "shahin-tali", "general-varen")
+COMMANDER_BASELINE = {
+    "body_name": "player-commander",
+    "vertices": 13380,
+    "polygons": 26756,
+    "positions": "a7d5f6c2dbb7d236121535f84db2a5afbeba45f991b2b70123ed72eaba4ba484",
+    "topology": "5691bb9e973fc65dc57141ac959921fc5a9d3f0dfdf011405b9e7e144c4b369b",
+    "weights": "b488e0e4cedfb18dbb82531ac83e29b7e34df3554dda709e7b1c66f01329be87",
+    "bones": "ea3d9227a0ae8da9ec58e62311c16dd4b248dfa763a4f8b80e31783040b35ebe",
+    "bounds": [[-0.050253, 0.050253], [-0.032411, 0.010261], [-0.081623, 0.088098]],
+    "armature_scale": [0.01, 0.01, 0.01],
+    "armature_matrix": [
+        0.01, 0.0, 0.0, 0.0, 0.0, -0.0, -0.01, 0.0,
+        0.0, 0.01, -0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+    ],
+    "body_matrix": [
+        0.01, 0.0, 0.0, 0.0, 0.0, -0.0, -0.01, 0.0,
+        0.0, 0.01, -0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+    ],
+    "parent_inverse": [
+        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+        0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+    ],
+}
 
 
 def clear_scene():
@@ -23,6 +48,101 @@ def world_bounds(obj):
     return low, high
 
 
+def digest(rows):
+    payload = json.dumps(rows, separators=(",", ":")).encode()
+    return hashlib.sha256(payload).hexdigest()
+
+
+def rounded_matrix(matrix):
+    return [round(value, 6) for row in matrix for value in row]
+
+
+def body_position_hash(body):
+    return digest([[round(component, 6) for component in vertex.co] for vertex in body.data.vertices])
+
+
+def body_topology_hash(body):
+    return digest([list(polygon.vertices) for polygon in body.data.polygons])
+
+
+def body_weight_hash(body):
+    return digest([
+        [
+            [body.vertex_groups[item.group].name, round(item.weight, 6)]
+            for item in sorted(vertex.groups, key=lambda assignment: body.vertex_groups[assignment.group].name)
+        ]
+        for vertex in body.data.vertices
+    ])
+
+
+def rest_bone_hash(armature):
+    return digest([
+        [bone.name, bone.parent.name if bone.parent else None, rounded_matrix(bone.matrix_local)]
+        for bone in armature.data.bones
+    ])
+
+
+def position_bounds(obj):
+    points = [obj.matrix_world @ vertex.co for vertex in obj.data.vertices]
+    return [
+        [round(min(point[axis] for point in points), 6), round(max(point[axis] for point in points), 6)]
+        for axis in range(3)
+    ]
+
+
+def maximum_influences(obj):
+    return max(
+        (sum(assignment.weight > 1e-6 for assignment in vertex.groups) for vertex in obj.data.vertices),
+        default=0,
+    )
+
+
+def linked_source(socket, message):
+    assert socket.is_linked and len(socket.links) == 1, message
+    link = socket.links[0]
+    return link.from_node, link.from_socket
+
+
+def assert_pbr_materials(outfits):
+    for outfit in outfits:
+        assert outfit.data.materials, f"{outfit.name} lacks a material"
+        for material in outfit.data.materials:
+            assert material and material.use_nodes and material.node_tree, f"{outfit.name} lacks PBR nodes"
+            principled = next(
+                (node for node in material.node_tree.nodes if node.type == "BSDF_PRINCIPLED"),
+                None,
+            )
+            assert principled, f"{material.name} lacks Principled BSDF"
+            normal, normal_output = linked_source(
+                principled.inputs["Normal"], f"{material.name} normal map is unbound",
+            )
+            assert normal.type == "NORMAL_MAP" and normal_output.name == "Normal", \
+                f"{material.name} normal input bypasses Normal Map"
+            normal_image, normal_image_output = linked_source(
+                normal.inputs["Color"], f"{material.name} normal image is unbound",
+            )
+            assert normal_image.type == "TEX_IMAGE" and normal_image_output.name == "Color", \
+                f"{material.name} normal map lacks an image"
+            for socket_name, channel_name in (("Roughness", "Green"), ("Metallic", "Blue")):
+                source, output = linked_source(
+                    principled.inputs[socket_name], f"{material.name} {socket_name.lower()} map is unbound",
+                )
+                if source.type == "SEPARATE_COLOR":
+                    assert output.name == channel_name, \
+                        f"{material.name} uses the wrong packed {socket_name.lower()} channel"
+                    source, output = linked_source(
+                        source.inputs["Color"], f"{material.name} packed MR image is unbound",
+                    )
+                assert source.type == "TEX_IMAGE" and output.name == "Color", \
+                    f"{material.name} {socket_name.lower()} lacks an image"
+            images = {
+                node.image for node in material.node_tree.nodes
+                if node.type == "TEX_IMAGE" and node.image is not None
+            }
+            assert len(images) >= 3, f"{material.name} lacks diffuse, normal, and metallic-roughness maps"
+            assert all(max(image.size) <= 2048 for image in images), f"{material.name} exceeds the 2K PBR limit"
+
+
 def requested_roles():
     script_args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     parser = argparse.ArgumentParser()
@@ -34,7 +154,11 @@ def requested_roles():
 for role in requested_roles():
     clear_scene()
     target = ROOT / "assets" / "models" / "characters" / "core" / f"{role}.glb"
-    source = ROOT / "tools" / "raw-character" / "makehuman-js" / f"{role}.obj"
+    source = ROOT / "tools" / "raw-character" / (
+        "mixamo/player-commander-rigged.fbx"
+        if role == "player-commander"
+        else f"makehuman-js/{role}.obj"
+    )
     assert target.is_file() and target.stat().st_size > 500_000, f"missing or tiny: {target.name}"
     assert source.is_file() and target.stat().st_mtime >= source.stat().st_mtime, \
         f"GLB is stale relative to corrected OBJ: {role}"
@@ -46,9 +170,10 @@ for role in requested_roles():
     trousers = [obj for obj in outfits if obj.name in {"outfit_trouser_left", "outfit_trouser_right"}]
     bodies = [obj for obj in meshes if any(mod.type == "ARMATURE" for mod in obj.modifiers) and obj not in outfits]
     fitted_garments = undershirts + trousers + [obj for obj in outfits if obj.name == "outfit_tunic"]
-    assert len(armatures) == 1 and len(armatures[0].data.bones) >= 60, f"bad rig: {role}"
+    assert len(armatures) == 1 and len(armatures[0].data.bones) == 65, f"bad rig: {role}"
     assert len(bodies) == 1, f"missing or ambiguous skinned body mesh: {role}"
-    assert 1.4 <= max(bodies[0].dimensions) <= 2.2, f"body scale is not human-sized: {role}"
+    if role != "player-commander":
+        assert 1.4 <= max(bodies[0].dimensions) <= 2.2, f"body scale is not human-sized: {role}"
     assert len(outfits) >= 8, f"incomplete outfit: {role}"
     assert len(undershirts) == 1, f"missing base garment: {role}"
     if role != "player-commander":
@@ -97,9 +222,35 @@ for role in requested_roles():
             "outfit_jacket", "outfit_trousers", "outfit_boot_left", "outfit_boot_right",
             "outfit_belt", "outfit_headgear", "outfit_role_kit", "outfit_undershirt",
         }
-        assert required_real <= {item.name for item in outfits}, "commander real wardrobe is incomplete"
+        assert required_real == {item.name for item in outfits}, "commander outfit set is not exact"
         assert all(any(mod.type == "ARMATURE" for mod in item.modifiers) for item in outfits), \
             "wardrobe is not skinned"
+        assert maximum_influences(bodies[0]) <= 4, "commander body exceeds four bone influences"
+        assert all(maximum_influences(item) <= 4 for item in outfits), \
+            "commander wardrobe exceeds four bone influences"
+        assert_pbr_materials(outfits)
+        baseline = COMMANDER_BASELINE
+        assert body_position_hash(bodies[0]) == baseline["positions"], \
+            "commander POSITION data changed from the pre-Task-3 baseline"
+        assert body_topology_hash(bodies[0]) == baseline["topology"], \
+            "commander face topology changed from the pre-Task-3 baseline"
+        assert body_weight_hash(bodies[0]) == baseline["weights"], \
+            "commander body weights changed from the pre-Task-3 baseline"
+        assert rest_bone_hash(armatures[0]) == baseline["bones"], \
+            "commander bind bones changed from the pre-Task-3 baseline"
+        assert position_bounds(bodies[0]) == baseline["bounds"], \
+            "commander body bounds changed from the pre-Task-3 baseline"
+        assert bodies[0].name == baseline["body_name"], "commander body identity changed"
+        assert len(bodies[0].data.vertices) == baseline["vertices"], "commander vertex count changed"
+        assert len(bodies[0].data.polygons) == baseline["polygons"], "commander face count changed"
+        assert [round(value, 6) for value in armatures[0].scale] == baseline["armature_scale"], \
+            "commander armature scale changed from 0.01"
+        assert rounded_matrix(armatures[0].matrix_world) == baseline["armature_matrix"], \
+            "commander armature world matrix changed"
+        assert rounded_matrix(bodies[0].matrix_world) == baseline["body_matrix"], \
+            "commander body world matrix changed"
+        assert rounded_matrix(bodies[0].matrix_parent_inverse) == baseline["parent_inverse"], \
+            "commander bind parent inverse changed"
         assert armatures[0].get("character_id") == role, "commander identity metadata is missing"
         assert all(item.get("wardrobe_source") == "wwii-russian-donor.glb" for item in outfits), \
             "commander wardrobe provenance is missing"

@@ -181,7 +181,9 @@ def align_to_body_landmarks(pieces, body):
         landmarks["Hips"].z - trouser_high.z,
     ))
     _translate_center(by_name["wardrobe_belt"], landmarks["Hips"])
-    _translate_center(by_name["wardrobe_headgear"], landmarks["Head"])
+    headgear = by_name["wardrobe_headgear"]
+    _translate_center(headgear, landmarks["Head"])
+    headgear.matrix_world.translation.z += body_height * 0.01
     _translate_center(by_name["wardrobe_boot_left"], landmarks["LeftFoot"])
     _translate_center(by_name["wardrobe_boot_right"], landmarks["RightFoot"])
     _translate_center(by_name["wardrobe_role_kit"], landmarks["Hips"], axes=(2,))

@@ -285,22 +285,21 @@ def build(role, profile):
     reset_scene()
     armature, source_mesh = import_fbx(RIGGED_SOURCE)
     armature.name = "mixamo_rig"
-    # Mixamo returned the MakeHuman JS source at one tenth of a normal human
-    # size.  Scale the complete bound hierarchy once; never scale loose OBJ
-    # geometry independently from its bind matrices.
-    armature.scale *= 10.0
-    if armature.animation_data:
-        armature.animation_data_clear()
-    for pose_bone in armature.pose.bones:
-        pose_bone.matrix_basis.identity()
-    variant_obj = import_obj(MAKEHUMAN_SOURCE / f"{role}.obj")
-    character_mesh = skinned_variant(source_mesh, variant_obj, role)
-    bpy.data.objects.remove(variant_obj, do_unlink=True)
-    bpy.data.objects.remove(source_mesh, do_unlink=True)
     if role == "player-commander":
+        character_mesh = source_mesh
         from wardrobe_fitter import fit_wardrobe
         fit_wardrobe(character_mesh, armature, role)
     else:
+        # The non-commander variants retain their existing corrected OBJ path.
+        armature.scale *= 10.0
+        if armature.animation_data:
+            armature.animation_data_clear()
+        for pose_bone in armature.pose.bones:
+            pose_bone.matrix_basis.identity()
+        variant_obj = import_obj(MAKEHUMAN_SOURCE / f"{role}.obj")
+        character_mesh = skinned_variant(source_mesh, variant_obj, role)
+        bpy.data.objects.remove(variant_obj, do_unlink=True)
+        bpy.data.objects.remove(source_mesh, do_unlink=True)
         create_outfit(armature, character_mesh, profile)
     armature["character_id"] = role
     armature["display_name"] = profile["label"]
@@ -330,7 +329,7 @@ def main():
     for role in requested_roles():
         profile = CAST[role]
         source = MAKEHUMAN_SOURCE / f"{role}.obj"
-        if not source.is_file():
+        if role != "player-commander" and not source.is_file():
             raise FileNotFoundError(f"Expected MakeHuman source: {source}")
         build(role, profile)
 
