@@ -17,6 +17,7 @@ DONOR_ROOT = ROOT / "tools/raw-character/donor/russian-soldier"
 ARCHIVE = DONOR_ROOT / "original-download.zip"
 TARGET = ROOT / "assets/models/characters/wardrobe/wwii-russian-donor.glb"
 PROOF = ROOT / "assets/models/characters/wardrobe/wwii-russian-donor-proof.png"
+PBR_ROOT = ROOT / "assets/models/characters/wardrobe/wwii-russian-donor-pbr"
 SUPPORTED = {".glb", ".gltf", ".fbx", ".obj"}
 REQUIRED = (
     "wardrobe_jacket", "wardrobe_trousers", "wardrobe_boot_left",
@@ -292,22 +293,32 @@ def derive_pbr_maps(material: bpy.types.Material) -> None:
             roughness.extend((rough, rough, rough, 1.0))
             metallic.extend((metal, metal, metal, 1.0))
             normal.extend((.5 + (right - left) * .35, .5 + (above - below) * .35, 1.0, 1.0))
+    PBR_ROOT.mkdir(parents=True, exist_ok=True)
     generated = {}
+    filenames = []
     for role, pixels in (("derived_normal", normal), ("derived_roughness", roughness), ("derived_metallic", metallic)):
         image = bpy.data.images.new(f"{diffuse.image.name}_{role}", width=width, height=height, alpha=False)
         image.pixels.foreach_set(pixels)
         image.colorspace_settings.name = "Non-Color"
+        filename = f"{Path(diffuse.image.name).stem}__{role}.png"
+        image.filepath_raw = str(PBR_ROOT / filename)
+        image.file_format = "PNG"
+        image.save()
+        image.pack()
         node = nodes.new("ShaderNodeTexImage")
         node.name = role
         node.label = f"generated from licensed diffuse: {role}"
         node.image = image
         generated[role] = node
+        filenames.append(filename)
     normal_map = nodes.new("ShaderNodeNormalMap")
     normal_map.label = "generated from licensed diffuse: normal conversion"
     links.new(generated["derived_normal"].outputs["Color"], normal_map.inputs["Color"])
     links.new(normal_map.outputs["Normal"], principled.inputs["Normal"])
     links.new(generated["derived_roughness"].outputs["Color"], principled.inputs["Roughness"])
     links.new(generated["derived_metallic"].outputs["Color"], principled.inputs["Metallic"])
+    material["generated_pbr_files"] = "|".join(filenames)
+    material["generated_pbr_source"] = diffuse.image.name
     bpy.data.images.remove(sample)
 
 

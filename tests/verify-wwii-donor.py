@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "assets/models/characters/wardrobe/wwii-russian-donor.glb"
 PROOF = ROOT / "assets/models/characters/wardrobe/wwii-russian-donor-proof.png"
 DONOR = ROOT / "tools/raw-character/donor/russian-soldier/soldier.fbx"
+PBR_ROOT = ROOT / "assets/models/characters/wardrobe/wwii-russian-donor-pbr"
 REQUIRED = {
     "wardrobe_jacket", "wardrobe_trousers", "wardrobe_boot_left",
     "wardrobe_boot_right", "wardrobe_belt", "wardrobe_headgear",
@@ -52,6 +53,9 @@ for name in REQUIRED:
     assert len(mesh.data.polygons) < SOURCE_POLYGONS * .8, f"{name} retains near-full donor faces"
     assert mesh.get("donor_proof"), f"{name} lacks donor material/UV provenance"
 
+assert meshes["wardrobe_belt"]["donor_proof"] == "sov_soldier_0_co brown belt-strap UV island", "belt proof is not the exact licensed atlas island"
+assert meshes["wardrobe_role_kit"]["donor_proof"] == "sov_eqipment_0_co.png pouch UV island [0.285,0.258]-[0.586,0.600]", "kit proof is not the exact licensed atlas island"
+
 signatures = {name: triangle_signatures(meshes[name]) for name in REQUIRED}
 for name, own in signatures.items():
     for other, candidate in signatures.items():
@@ -80,4 +84,9 @@ for mesh in meshes.values():
         image_names = {node.image.name.lower() for node in nodes if node.type == "TEX_IMAGE" and node.image}
         assert len(image_names) >= 3, f"{material.name} lacks diffuse plus derived normal/roughness/metallic images"
         assert not any("hhl_01" in name or "mouth_co" in name for name in image_names), f"{material.name} retains body or mouth atlas"
+        generated = material.get("generated_pbr_files")
+        assert generated, f"{material.name} lacks authorized generated-PBR provenance"
+        expected_paths = [PBR_ROOT / name for name in generated.split("|")]
+        assert all(path.is_file() and path.stat().st_size > 1_000 for path in expected_paths), f"{material.name} generated-PBR files are missing"
+        assert all("__derived_" in path.name for path in expected_paths), f"{material.name} PBR maps are not named as derived maps"
 print("verify-wwii-donor: PASS")
