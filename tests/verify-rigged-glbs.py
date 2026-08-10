@@ -113,6 +113,11 @@ def assert_pbr_materials(outfits):
                 None,
             )
             assert principled, f"{material.name} lacks Principled BSDF"
+            base_color, base_color_output = linked_source(
+                principled.inputs["Base Color"], f"{material.name} Base Color image is unbound",
+            )
+            assert base_color.type == "TEX_IMAGE" and base_color_output.name == "Color" \
+                and base_color.image is not None, f"{material.name} Base Color lacks an image"
             normal, normal_output = linked_source(
                 principled.inputs["Normal"], f"{material.name} normal map is unbound",
             )
@@ -121,8 +126,10 @@ def assert_pbr_materials(outfits):
             normal_image, normal_image_output = linked_source(
                 normal.inputs["Color"], f"{material.name} normal image is unbound",
             )
-            assert normal_image.type == "TEX_IMAGE" and normal_image_output.name == "Color", \
+            assert normal_image.type == "TEX_IMAGE" and normal_image_output.name == "Color" \
+                and normal_image.image is not None, \
                 f"{material.name} normal map lacks an image"
+            path_images = {base_color.image, normal_image.image}
             for socket_name, channel_name in (("Roughness", "Green"), ("Metallic", "Blue")):
                 source, output = linked_source(
                     principled.inputs[socket_name], f"{material.name} {socket_name.lower()} map is unbound",
@@ -133,14 +140,46 @@ def assert_pbr_materials(outfits):
                     source, output = linked_source(
                         source.inputs["Color"], f"{material.name} packed MR image is unbound",
                     )
-                assert source.type == "TEX_IMAGE" and output.name == "Color", \
+                assert source.type == "TEX_IMAGE" and output.name == "Color" and source.image is not None, \
                     f"{material.name} {socket_name.lower()} lacks an image"
-            images = {
-                node.image for node in material.node_tree.nodes
-                if node.type == "TEX_IMAGE" and node.image is not None
-            }
-            assert len(images) >= 3, f"{material.name} lacks diffuse, normal, and metallic-roughness maps"
-            assert all(max(image.size) <= 2048 for image in images), f"{material.name} exceeds the 2K PBR limit"
+                path_images.add(source.image)
+            assert len(path_images) >= 3, f"{material.name} lacks Base Color, Normal, and MR path images"
+            assert all(max(image.size) <= 2048 for image in path_images), \
+                f"{material.name} exceeds the 2K PBR limit"
+
+
+def assert_pbr_guard_rejects_detached_paths(outfit):
+    accepted = []
+    for socket_name in ("Base Color", "Normal", "Roughness", "Metallic"):
+        probe = outfit.copy()
+        probe.data = outfit.data.copy()
+        material = outfit.data.materials[0].copy()
+        probe.data.materials.clear()
+        probe.data.materials.append(material)
+        principled = next(node for node in material.node_tree.nodes if node.type == "BSDF_PRINCIPLED")
+        if socket_name == "Base Color":
+            material.node_tree.links.remove(principled.inputs[socket_name].links[0])
+        else:
+            source, _output = linked_source(principled.inputs[socket_name], "negative PBR fixture is unbound")
+            if source.type == "NORMAL_MAP":
+                source, _output = linked_source(source.inputs["Color"], "negative normal fixture is unbound")
+            elif source.type == "SEPARATE_COLOR":
+                source, _output = linked_source(source.inputs["Color"], "negative MR fixture is unbound")
+            image = source.image
+            source.image = None
+            decoy = material.node_tree.nodes.new("ShaderNodeTexImage")
+            decoy.image = image
+        try:
+            assert_pbr_materials([probe])
+            accepted.append(socket_name)
+        except AssertionError:
+            pass
+        finally:
+            mesh = probe.data
+            bpy.data.objects.remove(probe, do_unlink=True)
+            bpy.data.meshes.remove(mesh)
+            bpy.data.materials.remove(material)
+    assert not accepted, f"PBR verifier accepts detached shader paths: {accepted}"
 
 
 def requested_roles():
@@ -228,6 +267,7 @@ for role in requested_roles():
         assert maximum_influences(bodies[0]) <= 4, "commander body exceeds four bone influences"
         assert all(maximum_influences(item) <= 4 for item in outfits), \
             "commander wardrobe exceeds four bone influences"
+        assert_pbr_guard_rejects_detached_paths(outfits[0])
         assert_pbr_materials(outfits)
         baseline = COMMANDER_BASELINE
         assert body_position_hash(bodies[0]) == baseline["positions"], \
