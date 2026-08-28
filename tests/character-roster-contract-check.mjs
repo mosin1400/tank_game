@@ -50,7 +50,7 @@ const namedBodies = {
   'nader-rostami': 'medium'
 };
 const validBodies = new Set(['lean', 'medium', 'heavy']);
-const validFactions = new Set(['vardan', 'ash', 'civilian']);
+const validFactions = new Set(['vardan', 'ash']);
 const validFaceTiers = new Set(['full', 'simple']);
 const validTiers = new Set(['main', 'secondary']);
 const validFaceModes = new Set(['cinematic', 'ambient']);
@@ -134,18 +134,11 @@ for (const entry of roster.entries) {
   }
 }
 
-for (const id of mainRoles) {
+for (const id of [...mainRoles, ...secondaryRoles]) {
   assert.equal(
     byId.get(id)?.geometry,
-    `assets/models/characters/core/${id}.glb`,
-    `${id} must load his authored rigged GLB rather than the generic template`
-  );
-}
-for (const id of secondaryRoles) {
-  assert.equal(
-    byId.get(id)?.geometry,
-    'assets/models/characters/core/player-commander.glb',
-    `${id} must reuse the real shared rigged base until its outfit is generated at runtime`
+    'assets/models/characters/core/soldier-base.glb',
+    `${id} must reuse the downloaded soldier and its unchanged original rig`
   );
 }
 
@@ -155,11 +148,11 @@ for (const [id, body] of Object.entries(namedBodies)) {
 }
 
 for (const entry of roster.entries.filter((candidate) => candidate.kind !== 'named')) {
-  const fallbackRoot = entry.faction === 'vardan'
-    ? 'vardan-rifleman'
-    : entry.faction === 'ash'
-      ? 'ash-rifleman'
-      : 'convoy-driver';
+  const fallbackRoot = entry.kind === 'general'
+    ? 'convoy-driver'
+    : entry.faction === 'vardan'
+      ? 'vardan-rifleman'
+      : 'ash-rifleman';
   assert.equal(
     entry.fallback,
     entry.id === fallbackRoot ? null : fallbackRoot,

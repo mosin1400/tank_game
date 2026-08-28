@@ -226,3 +226,8 @@
     #hpwrap{ width:min(300px,56vw); }
     .mgrid{ grid-template-columns:1fr; }
   }
+#cinematicSubtitle{position:fixed;z-index:70;left:50%;bottom:9vh;transform:translate(-50%,18px);width:min(760px,88vw);padding:14px 20px;border:1px solid rgba(230,234,209,.35);border-radius:12px;background:rgba(12,14,10,.88);color:#e6ead1;text-align:center;opacity:0;pointer-events:none;transition:.25s;box-shadow:0 12px 40px rgba(0,0,0,.45)}
+#cinematicSubtitle.on{opacity:1;transform:translate(-50%,0)}
+#cinematicSubtitle b{display:block;color:#aab668;font-size:13px;margin-bottom:4px}
+#cinematicSubtitle span{font-size:17px;line-height:1.8}
+#tacticalCommands{position:fixed;z-index:35;right:18px;bottom:128px;display:none;gap:6px;direction:rtl}body[data-state="play"] #tacticalCommands{display:flex}body.cinematic #hud,body.cinematic #sticks,body.cinematic #btnFire,body.cinematic #btnMG,body.cinematic #tacticalCommands,body.cinematic #dmg,body.cinematic #dmgdir{display:none!important}#tacticalCommands button{border:1px solid rgba(170,182,104,.45);border-radius:9px;background:rgba(18,22,14,.84);color:#e6ead1;padding:8px 11px;font:700 12px Vazirmatn;cursor:pointer}#tacticalCommands button:hover{background:#8a9a4e;color:#11150c}

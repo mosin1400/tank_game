@@ -13,6 +13,7 @@ function initBullets(){
 function spawnBullet(pos,dir,speed,owner,dmg,kind,opts={}){
   const b=bullets.find(o=>!o.active); if(!b)return;
   b.active=true; b.owner=owner; b.kind=kind; b.dmg=dmg; b.life=2.8;
+  b.ricocheted=false;
   b.splash=opts.splash||0; b.expl=opts.expl||0.7; b.gravity=opts.gravity||0; b.trailT=0;
   b.mesh.visible=true; b.mesh.position.copy(pos); b.srcPos=pos.clone();
   b.vel.copy(dir).multiplyScalar(speed);

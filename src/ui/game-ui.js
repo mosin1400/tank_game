@@ -118,27 +118,39 @@ const camLook=vecShim(0,0,0),camIdeal=vecShim(0,0,0);
 function updateCamera(dt){
   shake=Math.max(0,shake-dt*2.6);
   fovKick*=Math.exp(-6*dt);
-  if(state!=='play'&&state!=='dying'){
+  let precisionPose=null;
+  const cinematicPose=typeof OpeningCinematic!=='undefined'&&OpeningCinematic.isActive()?OpeningCinematic.cameraPose():null;
+  if(cinematicPose){
+    camera.position.set(cinematicPose.position.x,cinematicPose.position.y,cinematicPose.position.z);
+    camera.lookAt(cinematicPose.lookAt.x,cinematicPose.lookAt.y,cinematicPose.lookAt.z);
+    precisionPose={fov:cinematicPose.fov,shakeScale:0};
+  }else if(state!=='play'&&state!=='dying'){
     menuAng+=dt*0.15;
     camera.position.set(Math.sin(menuAng)*16,6.5,Math.cos(menuAng)*16);
     camera.lookAt(0,1.6,0);
   }else{
+    const precision=typeof TankAiming!=='undefined'&&(keys.ShiftLeft||keys.ShiftRight);
+    precisionPose=precision?TankAiming.cameraPose():null;
     const fwd=new THREE.Vector3(Math.sin(player.yaw),0,Math.cos(player.yaw));
-    camIdeal.copy(player.pos).addScaledVector(fwd,-9.5); camIdeal.y=5.6;
-    camera.position.lerp(camIdeal,1-Math.exp(-5*dt));
+    if(precisionPose)camera.position.copy(precisionPose.position);
+    else{
+      camIdeal.copy(player.pos).addScaledVector(fwd,-9.5); camIdeal.y=5.6;
+      camera.position.lerp(camIdeal,1-Math.exp(-5*dt));
+    }
     if(shake>0){
-      camera.position.x+=rand(-1,1)*shake*0.35;
-      camera.position.y+=rand(-1,1)*shake*0.28;
-      camera.rotation.z=rand(-1,1)*shake*0.02;
+      const shakeScale=precisionPose?precisionPose.shakeScale:1;
+      camera.position.x+=rand(-1,1)*shake*0.35*shakeScale;
+      camera.position.y+=rand(-1,1)*shake*0.28*shakeScale;
+      camera.rotation.z=rand(-1,1)*shake*0.02*shakeScale;
     }else{
       camera.rotation.z*=0.9;
     }
-    camLook.copy(player.pos).addScaledVector(fwd,6); camLook.y=1.7;
-    camera.lookAt(camLook);
+    if(precisionPose)camera.lookAt(precisionPose.lookAt);
+    else{camLook.copy(player.pos).addScaledVector(fwd,6); camLook.y=1.7;camera.lookAt(camLook);}
     sun.position.copy(player.pos).add(new THREE.Vector3(38,52,22));
     sun.target.position.copy(player.pos);
   }
-  const targetFov=46+fovKick;
+  const targetFov=(precisionPose?precisionPose.fov:46)+fovKick*(precisionPose?precisionPose.shakeScale:1);
   if(Math.abs(camera.fov-targetFov)>0.01){
     camera.fov=targetFov; camera.updateProjectionMatrix();
   }

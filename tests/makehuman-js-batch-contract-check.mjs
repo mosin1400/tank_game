@@ -9,6 +9,17 @@ for (const id of ['player-commander', 'ramin', 'saman', 'nikan', 'shahin-tali', 
   assert.match(server, new RegExp(`"${id}"`), `server must whitelist ${id}`);
 }
 assert.match(generator, /setGender\(1\)/, 'batch must generate only male characters');
+const runBody = generator.slice(generator.indexOf('async function run'));
+assert.ok(
+  runBody.indexOf('setGender(1)') >= 0 &&
+    runBody.indexOf('setGender(1)') < runBody.indexOf('baseVertices=human.geometry.vertices'),
+  'male target must be baked before the stable base vertices are captured',
+);
+assert.ok(
+  runBody.indexOf('geometry._bufferGeometry') >= 0 &&
+    runBody.indexOf('geometry._bufferGeometry') < runBody.indexOf('targets.applyTargets()'),
+  'headless generation must mark the geometry render-ready before applying targets',
+);
 assert.match(generator, /bakePresetGeometry/, 'batch must bake each preset into distinct OBJ geometry');
 assert.match(generator, /baseVertices/, 'batch must reset from a stable MakeHuman base mesh per preset');
 assert.match(generator, /jaw:/, 'main character presets must include face variation');

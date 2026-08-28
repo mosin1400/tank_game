@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const boot=fs.readFileSync(new URL('../src/boot.js',import.meta.url),'utf8');
+const runtime=fs.readFileSync(new URL('../src/core/runtime.js',import.meta.url),'utf8');
+const director=fs.readFileSync(new URL('../src/missions/director.js',import.meta.url),'utf8');
+const screens=fs.readFileSync(new URL('../src/ui/screens.js',import.meta.url),'utf8');
+const ui=fs.readFileSync(new URL('../src/ui/game-ui.js',import.meta.url),'utf8');
+assert.match(boot,/src\/cinematics\/opening-cinematic\.js/);
+assert.match(runtime,/OpeningCinematic\.configure\(/);
+assert.match(screens,/OpeningCinematic\.start\(/);
+assert.match(director,/OpeningCinematic\.update\(dt\)/);
+assert.match(ui,/OpeningCinematic\.cameraPose\(\)/);
+console.log('opening-cinematic-runtime-check: PASS');

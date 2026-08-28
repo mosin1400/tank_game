@@ -7,7 +7,7 @@
     'hit-react','fall'
   ];
   var VALID_KINDS={named:true,soldier:true,general:true};
-  var VALID_FACTIONS={vardan:true,ash:true,civilian:true};
+  var VALID_FACTIONS={vardan:true,ash:true};
   var VALID_BODIES={lean:true,medium:true,heavy:true};
   var VALID_FACE_TIERS={full:true,simple:true};
   var VALID_TIERS={main:true,secondary:true};
@@ -24,7 +24,7 @@
     'nikan':['named','vardan','medium','full','idle',null],
     'arad':['named','vardan','lean','simple','radio',null],
     'major-mehraz':['named','vardan','heavy','simple','idle',null],
-    'shahin-tali':['named','civilian','heavy','full','binoculars',null],
+    'shahin-tali':['named','vardan','heavy','full','binoculars',null],
     'general-varen':['named','ash','lean','full','idle',null],
     'soroush-amani':['named','vardan','lean','simple','binoculars',null],
     'mehran':['named','vardan','heavy','simple','repair',null],
@@ -35,11 +35,11 @@
     'ash-rifleman':['soldier','ash','medium','simple','rifle-aim',null],
     'ash-elite':['soldier','ash','heavy','simple','rifle-aim','ash-rifleman'],
     'ash-crew':['soldier','ash','lean','simple','repair','ash-rifleman'],
-    'convoy-driver':['general','civilian','medium','simple','driver-sit',null],
-    'mechanic':['general','civilian','heavy','simple','repair','convoy-driver'],
-    'rail-worker':['general','civilian','heavy','simple','idle','convoy-driver'],
-    'resistance':['general','civilian','lean','simple','rifle-aim','convoy-driver'],
-    'medic':['general','civilian','medium','simple','idle','convoy-driver']
+    'convoy-driver':['general','vardan','medium','simple','driver-sit',null],
+    'mechanic':['general','vardan','heavy','simple','repair','convoy-driver'],
+    'rail-worker':['general','vardan','heavy','simple','idle','convoy-driver'],
+    'resistance':['general','vardan','lean','simple','rifle-aim','convoy-driver'],
+    'medic':['general','vardan','medium','simple','idle','convoy-driver']
   };
   var EMPTY_LIST=Object.freeze([]);
   var dependencies={fetchJson:defaultFetchJson};

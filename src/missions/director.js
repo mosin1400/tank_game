@@ -43,6 +43,7 @@ function spawnEnemy(typeKey,opts={}){
   rebuilt.root.rotation.copy(e.root.rotation);
   rebuilt.root.scale.copy(e.root.scale);
   Object.assign(e,rebuilt);
+  TankDamage.initialize(e);
   scene.add(e.root);
   e.mgLeft=0; e.mgT=0;
   e.dmg=cfg.dmg+Math.floor((curMission?curMission.idx:0)*0.3);
@@ -67,6 +68,8 @@ function updateEnemies(dt,t){
   for(const e of enemies){
     const ep=e.root.position,cfg=e.cfg;
     const dx=player.pos.x-ep.x,dz=player.pos.z-ep.z,dist=Math.hypot(dx,dz);
+    const visibility=CombatAwareness.visibilityBetween(ep,player.pos);
+    const moduleMods=TankDamage.modifiers(e);
     const toP=Math.atan2(dx,dz);
     let hull=e.root.rotation.y;
     const wander=Math.sin(t*0.5+e.wander)*0.5;
@@ -85,8 +88,8 @@ function updateEnemies(dt,t){
       const strafe=Math.sin(t*0.7+e.strafePhase)*0.35;
       const moveDir=hull+strafe;
       const f=new THREE.Vector3(Math.sin(moveDir),0,Math.cos(moveDir));
-      ep.addScaledVector(f,e.speed*dt);
-      for(const w of e.wheels)w.rotation.x+=e.speed*dt/0.36;
+      ep.addScaledVector(f,e.speed*moduleMods.speed*dt);
+      for(const w of e.wheels)w.rotation.x+=e.speed*moduleMods.speed*dt/0.36;
       if(Math.random()<dt*3){
         const b=ep.clone().addScaledVector(f,-2.8); b.y=0.3;
         spawnSmoke(b,1,{opacity:0.22,vy:1,color:0x8f8672,maxLife:1.2});
@@ -104,7 +107,7 @@ function updateEnemies(dt,t){
     const hullDelta=Math.abs(hull-(e._prevHull||hull));
     e._prevHull=hull;
     const turretLag=Math.max(0.3,1-hullDelta*2); // چرخش بدنه → برجک کندتر
-    e.turret.rotation.y+=clamp(tl,-cfg.tSpd*dt*turretLag,cfg.tSpd*dt*turretLag);
+    e.turret.rotation.y+=clamp(tl,-cfg.tSpd*moduleMods.traverse*dt*turretLag,cfg.tSpd*moduleMods.traverse*dt*turretLag);
     e.cooldown-=dt;
     const acc=e.type==='boss'?0.16:(e.type==='heavy'?0.1:0.12);
     if(e.mgLeft>0){
@@ -121,7 +124,7 @@ function updateEnemies(dt,t){
         sMG(clamp(1.2/(1+dist*0.02),0.05,0.8));
       }
     }
-    else if(!player.dead&&dist<85&&Math.abs(tl)<acc&&e.cooldown<=0){
+    else if(!player.dead&&dist<85*Math.max(.25,visibility)&&Math.abs(tl)<acc&&e.cooldown<=0){
       e.cooldown=rand(cfg.cd[0],cfg.cd[1]);
       if(dist<45&&Math.random()<(e.type==='light'?0.35:0.18)){
         e.mgLeft=3+(Math.random()*3|0); e.mgT=0;
@@ -130,7 +133,7 @@ function updateEnemies(dt,t){
         e.root.updateMatrixWorld(true);
         const lead=dist/55*0.65;
         const aim=player.pos.clone().addScaledVector(player.vel,lead);
-        const err=1.4+Math.max(0,1.4-(curMission?curMission.idx:0)*0.2);
+        const err=(1.4+Math.max(0,1.4-(curMission?curMission.idx:0)*0.2))/Math.max(.2,visibility);
         aim.x+=rand(-err,err); aim.z+=rand(-err,err); aim.y=1.9;
         const mp=new THREE.Vector3(),mq=new THREE.Quaternion();
         e.gunTip.getWorldPosition(mp); e.gun.getWorldQuaternion(mq);
@@ -144,55 +147,74 @@ function updateEnemies(dt,t){
     e.hpFill.scale.x=2.3*Math.max(0,e.hp/e.maxHp);
   }
 }
+function projectileImpactTargets(projectile){
+  const targets=staticObs.slice();
+  if(projectile&&projectile.kind!=='mg')for(const tr of trees)if(tr.alive){
+    targets.push({type:'circle',x:tr.x,z:tr.z,r:.55,h:3.6,target:{kind:'tree',value:tr},material:'wood'});
+  }
+  if(projectile&&projectile.owner==='player')for(const e of enemies)if(!e.dead){
+    targets.push({type:'circle',x:e.root.position.x,z:e.root.position.z,r:e.radius+.2,h:3.6,target:{kind:'enemy',value:e},material:'steel'});
+  }
+  if(projectile&&projectile.owner==='enemy'&&player&&!player.dead){
+    targets.push({type:'circle',x:player.pos.x,z:player.pos.z,r:2.4,h:3.4,target:{kind:'player',value:player},material:'steel'});
+  }
+  return targets;
+}
+function resolveProjectileImpact(b,hit){
+  const p=new THREE.Vector3(hit.point.x,hit.point.y,hit.point.z),target=hit.target;
+  const hitMaterial=hit.collider&&hit.collider.material;
+  const ricochet=CombatAwareness.resolveRicochet({material:hitMaterial,ricocheted:b.ricocheted,velocity:b.vel,normal:hit.normal,damage:b.dmg,life:b.life});
+  if(ricochet){b.vel.set(ricochet.velocity.x,ricochet.velocity.y,ricochet.velocity.z);b.dmg=ricochet.damage;b.life=ricochet.life;b.ricocheted=true;p.addScaledVector(new THREE.Vector3(hit.normal.x,hit.normal.y,hit.normal.z),.08);b.mesh.position.copy(p);spawnDebris(p,3);return {ricochet:true};}
+  if(hit.kind==='character'&&hit.actor){
+    CharacterCombat.applyHit(hit.actor,{kind:b.kind,damage:b.dmg,suppression:b.kind==='mg'?2:8,point:p});
+    explode(p,.28,{dist:distToPlayer(p),noCrater:true,smoke:0x6f6a5d});
+  }else if(target&&target.kind==='enemy'){
+    const module=TankDamage.classifyHit(target.value,p);TankDamage.apply(target.value,module,Math.min(.8,b.dmg/120));
+    damageEnemy(target.value,b.dmg,p.clone());
+    explode(p,b.expl*.7,{dist:distToPlayer(p),noCrater:true});
+  }else if(target&&target.kind==='player'){
+    const module=TankDamage.classifyHit(player,p);TankDamage.apply(player,module,Math.min(.7,b.dmg/140));
+    if(module!=='hull')showMsg(`آسیب به ${module==='tracks'?'زنجیر':module==='engine'?'موتور':'برجک'} تانک`,1800);
+    explode(p,.6,{dist:0,noCrater:true});
+    if(b.srcPos)showDamageDir(b.srcPos);
+    damagePlayer(b.dmg);
+  }else if(target&&target.kind==='tree'){
+    target.value.alive=false;target.value.root.visible=false;
+    spawnSmoke(new THREE.Vector3(target.value.x,2,target.value.z),4,{opacity:.4,color:0x55603a});
+    spawnFire(new THREE.Vector3(target.value.x,1.6,target.value.z),10,4,.6);sHit(.7);
+  }else{
+    if(hit.kind==='ground')DestructibleRegistry.handleImpact(null,{kind:'ground',projectileKind:b.kind,damage:b.dmg,point:hit.point,normal:hit.normal});
+    else if(hit.collider){
+      if(!hit.collider.__destructibleEntry){
+        const object=hit.collider.targetObject||(hit.collider.__impactObject={visible:true});
+        hit.collider.__destructibleEntry=DestructibleRegistry.register({object,collider:hit.collider,material:hit.collider.material||'concrete',durability:hit.collider.durability||80});
+      }
+      DestructibleRegistry.handleImpact(hit.collider.__destructibleEntry,{kind:b.kind,damage:b.dmg,point:hit.point,normal:hit.normal});
+    }
+    explode(p,b.expl*(hit.kind==='ground'?1:.8),{dist:distToPlayer(p),noCrater:hit.kind!=='ground'||b.expl<.9,smoke:hit.kind==='ground'?0x8f8268:0x77736a});
+  }
+  if(b.owner==='player'&&b.splash)applySplash(p,b.dmg*.6,b.splash);
+  return hit;
+}
 function updateBullets(dt){
   for(const b of bullets){
     if(!b.active)continue;
     b.life-=dt;
     const p=b.mesh.position;
+    const previous=p.clone();
     if(b.gravity)b.vel.y-=b.gravity*dt;
     p.addScaledVector(b.vel,dt);
     if(b.kind==='rocket'){
       b.trailT-=dt;
-      if(b.trailT<=0){b.trailT=0.035;spawnSmoke(p,1,{opacity:0.3,vy:0.6,maxLife:0.9,color:0x999088});}
+      if(b.trailT<=0){b.trailT=.035;spawnSmoke(p,1,{opacity:.3,vy:.6,maxLife:.9,color:0x999088});}
     }
-    let dead=false;
-    if(b.life<=0||Math.abs(p.x)>260||Math.abs(p.z)>260)dead=true;
-    if(!dead&&p.y<0.06){
-      explode(p.clone(),b.expl,{dist:distToPlayer(p),noCrater:b.expl<0.9,smoke:0x8f8268});
-      if(b.owner==='player'&&b.splash)applySplash(p,b.dmg*0.7,b.splash);
-      dead=true;
-    }
-    if(!dead)for(const bd of buildings){
-      if(p.y<bd.h&&Math.abs(p.x-bd.x)<bd.hw&&Math.abs(p.z-bd.z)<bd.hd){
-        explode(p.clone(),b.expl*0.8,{dist:distToPlayer(p),noCrater:true,smoke:0x8a857c});
-        if(b.owner==='player'&&b.splash)applySplash(p,b.dmg*0.6,b.splash);
-        dead=true; break;
-      }
-    }
-    if(!dead&&b.kind!=='mg'&&b.kind!=='rocket')for(const tr of trees){
-      if(tr.alive&&p.y<3.6&&Math.hypot(p.x-tr.x,p.z-tr.z)<0.55){
-        tr.alive=false; tr.root.visible=false;
-        spawnSmoke(new THREE.Vector3(tr.x,2,tr.z),4,{opacity:0.4,color:0x55603a});
-        spawnFire(new THREE.Vector3(tr.x,1.6,tr.z),10,4,0.6);
-        sHit(0.7); dead=true; break;
-      }
-    }
-    if(!dead&&b.owner==='player'){
-      for(const e of enemies){
-        if(Math.hypot(p.x-e.root.position.x,p.z-e.root.position.z)<e.radius+0.2&&p.y<3.6){
-          damageEnemy(e,b.dmg,p.clone());
-          if(b.splash)applySplash(p,b.dmg*0.6,b.splash);
-          explode(p.clone(),b.expl*0.7,{dist:distToPlayer(p),noCrater:true});
-          dead=true; break;
-        }
-      }
-    }else if(!dead&&b.owner==='enemy'&&!player.dead){
-      if(Math.hypot(p.x-player.pos.x,p.z-player.pos.z)<2.4&&p.y<3.4){
-        explode(p.clone(),0.6,{dist:0,noCrater:true});
-        if(b.srcPos)showDamageDir(b.srcPos);
-        damagePlayer(b.dmg);
-        dead=true;
-      }
+    let dead=b.life<=0||Math.abs(p.x)>260||Math.abs(p.z)>260;
+    if(!dead){
+      let hit=ImpactSystem.trace(previous,p,b);
+      const humanHit=typeof CharacterCombat!=='undefined'?CharacterCombat.traceSegment(previous,p):null;
+      if(humanHit&&(!hit||humanHit.distance<hit.distance))hit=humanHit;
+      CombatAwareness.suppressNear(p,3.5,b.kind==='mg'?.7:2.5);
+      if(hit){const outcome=ImpactSystem.resolve(b,hit);dead=!(outcome&&outcome.ricochet);}
     }
     if(dead){b.active=false;b.mesh.visible=false;}
   }
@@ -212,6 +234,7 @@ function updateDirector(dt){
   const M=curMission;
   if(!M||M.done)return;
   if(M.def.operation==='opening-convoy'){
+    if(OpeningCinematic.isActive()){OpeningCinematic.update(dt);return;}
     if(!OpeningOperation.isActive())OpeningOperation.start(M);
     const result=OpeningOperation.update(dt);
     if(result.failed)openDefeat();

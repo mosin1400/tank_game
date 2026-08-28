@@ -3,10 +3,12 @@
 import argparse
 import hashlib
 import json
+import math
 from pathlib import Path
 import sys
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
+from mathutils.kdtree import KDTree
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -88,6 +90,127 @@ def position_bounds(obj):
         [round(min(point[axis] for point in points), 6), round(max(point[axis] for point in points), 6)]
         for axis in range(3)
     ]
+
+
+def mesh_world_points(obj, depsgraph):
+    evaluated = obj.evaluated_get(depsgraph)
+    mesh = evaluated.to_mesh()
+    try:
+        points = [evaluated.matrix_world @ vertex.co for vertex in mesh.vertices]
+    finally:
+        evaluated.to_mesh_clear()
+    return points
+
+
+def assert_legal_pose_coordinates(obj, depsgraph):
+    points = mesh_world_points(obj, depsgraph)
+    assert points, f"{obj.name} has no renderable vertices"
+    for point in points:
+        assert all(math.isfinite(component) for component in point), \
+            f"non-finite posed vertex detected: {obj.name}"
+    span = max(
+        (max(point[axis] for point in points) - min(point[axis] for point in points))
+        for axis in range(3)
+    )
+    assert span < 2.5, f"posed mesh exploded: {obj.name} span={span:.2f}m"
+
+
+def _collect_landmark_points(armature):
+    pose = armature.pose.bones
+    mapping = {
+        "shoulder": [
+            ("LeftArm", "head"),
+            ("RightArm", "head"),
+            ("LeftShoulder", "head"),
+            ("RightShoulder", "head"),
+        ],
+        "waist": [
+            ("Spine2", "tail"),
+            ("Spine", "tail"),
+            ("Hips", "head"),
+        ],
+        "knee": [
+            ("LeftUpLeg", "tail"),
+            ("RightUpLeg", "tail"),
+        ],
+        "ankle": [
+            ("LeftFoot", "head"),
+            ("RightFoot", "head"),
+        ],
+    }
+    result = {}
+    missing = []
+    for group_name, specs in mapping.items():
+        points = []
+        for bone_name, endpoint in specs:
+            bone = pose.get(bone_name)
+            if bone is None:
+                missing.append(f"{group_name}:{bone_name}")
+                continue
+            local_point = bone.tail if endpoint == "tail" else bone.head
+            points.append(armature.matrix_world @ local_point)
+        assert points, f"no usable landmark points for {group_name}"
+        result[group_name] = points
+    assert not missing, f"pose landmarks missing: {sorted(set(missing))}"
+    return result
+
+
+def _build_kdtree_for_mesh(obj, depsgraph):
+    points = mesh_world_points(obj, depsgraph)
+    tree = KDTree(len(points))
+    for index, point in enumerate(points):
+        tree.insert(point, index)
+    tree.balance()
+    return tree
+
+
+def assert_body_garment_proximity(body, outfits, armature):
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    landmark_groups = _collect_landmark_points(armature)
+    trees = [_build_kdtree_for_mesh(outfit, depsgraph) for outfit in outfits]
+    for group_name, points in landmark_groups.items():
+        max_distance = 0.0
+        for point in points:
+            nearest = min((tree.find(point)[2] for tree in trees), default=float("inf"))
+            max_distance = max(max_distance, nearest)
+        assert max_distance <= 0.02, \
+            f"{group_name} garment clearance too high: {max_distance:.3f}m"
+
+
+def _apply_pose_offsets(armature, offsets):
+    originals = {}
+    for bone_name, angle in offsets.items():
+        bone = armature.pose.bones.get(bone_name)
+        if bone is None:
+            continue
+        originals[bone_name] = bone.matrix_basis.copy()
+        bone.matrix_basis = Matrix.Rotation(angle, 4, "X") @ bone.matrix_basis
+
+
+def assert_extreme_pose_integrity(armature, body, outfits):
+    cases = [
+        {"LeftArm": 0.9, "RightArm": -0.9},
+        {"LeftArm": -0.9, "RightArm": 0.9},
+        {"LeftUpLeg": 0.9, "RightUpLeg": -0.9},
+        {"LeftUpLeg": -0.9, "RightUpLeg": 0.9},
+    ]
+    assert all(
+        armature.pose.bones.get(name) is not None for name in {"LeftArm", "RightArm", "LeftUpLeg", "RightUpLeg"}
+    ), "required limb bones are missing for pose stress"
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    for index, offsets in enumerate(cases, start=1):
+        original = {bone_name: armature.pose.bones.get(bone_name).matrix_basis.copy() for bone_name in offsets}
+        try:
+            _apply_pose_offsets(armature, offsets)
+            bpy.context.view_layer.update()
+            for obj in (body, *outfits):
+                assert_legal_pose_coordinates(obj, depsgraph)
+            assert_body_garment_proximity(body, outfits, armature)
+            print(f"extreme pose pass: case {index}")
+        finally:
+            for bone_name, matrix in original.items():
+                armature.pose.bones[bone_name].matrix_basis = matrix
+            bpy.context.view_layer.update()
 
 
 def maximum_influences(obj):
@@ -296,5 +419,6 @@ for role in requested_roles():
             "commander wardrobe provenance is missing"
         assert undershirts[0].get("wardrobe_geometry_source") == \
             "wardrobe_jacket:collar+hem+sleeve-cuffs", "undershirt donor regions are not recorded"
+        assert_extreme_pose_integrity(armatures[0], bodies[0], outfits)
     assert not bpy.data.actions, f"base character must not embed a pose animation: {role}"
     print(f"rigged GLB: PASS {role} ({len(armatures[0].data.bones)} bones, {len(outfits)} outfit parts)")

@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const runtime=fs.readFileSync(new URL('../src/core/runtime.js',import.meta.url),'utf8');
+const manager=fs.readFileSync(new URL('../src/entities/character-manager.js',import.meta.url),'utf8');
+const screens=fs.readFileSync(new URL('../src/ui/screens.js',import.meta.url),'utf8');
+assert.match(runtime,/CharacterNavigation\.configure\(/,'runtime must provide live obstacles and enemies');
+assert.match(manager,/CharacterNavigation\.register\(group/,'moving characters must register for smart steering');
+assert.match(manager,/CharacterNavigation\.update\(dt\)/,'character update must advance smart navigation once');
+assert.match(screens,/CharacterNavigation\.reset\(\)/,'mission cleanup must clear navigation actors');
+console.log('character-navigation-runtime-check: PASS');

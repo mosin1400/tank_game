@@ -9,6 +9,9 @@ function spawnFire(p,n,spd,life){
   }
 }
 function spawnSmoke(p,n,opts={}){
+  if(typeof CombatAwareness!=='undefined'&&(opts.opacity||.4)>=.4&&n>=2){
+    CombatAwareness.registerSmoke({position:p,radius:Math.max(1.5,Math.sqrt(n)*1.2),density:Math.min(1,opts.opacity||.4),life:opts.maxLife||2.4});
+  }
   for(let i=0;i<n;i++){
     const sm=smokeSprites.find(o=>o.life<=0); if(!sm)return;
     sm.life=sm.max=rand(1.2,opts.maxLife||2.4);

@@ -48,6 +48,15 @@ function showBrief(i){
 }
 function clearWorld(){
   if(typeof OpeningOperation!=='undefined')OpeningOperation.dispose();
+  if(typeof OpeningCinematic!=='undefined')OpeningCinematic.dispose();
+  if(typeof CharacterCombat!=='undefined')CharacterCombat.reset();
+  if(typeof CharacterNavigation!=='undefined')CharacterNavigation.reset();
+  if(typeof DestructibleRegistry!=='undefined'){
+    for(const obstacle of staticObs)delete obstacle.__destructibleEntry;
+    DestructibleRegistry.reset();
+  }
+  if(typeof CombatAwareness!=='undefined')CombatAwareness.reset();
+  if(typeof TacticalCommand!=='undefined')TacticalCommand.reset();
   for(const e of[...enemies])scene.remove(e.root);
   enemies.length=0; bossRef=null;
   document.getElementById('bossbar').classList.remove('on');
@@ -72,7 +81,9 @@ function startMission(i){
   applyPalette(MISSIONS[i].p);
   player.pos.set(0,0,0); player.yaw=0; player.speed=0; player.hp=100;
   player.reload=0; player.dead=false; player.mgT=0;
+  player.modules={tracks:1,engine:1,turret:1};TankDamage.initialize(player);
   player.turret.rotation.y=0; player.gun.rotation.x=0; player.gun.position.z=1.35;
+  if(typeof TankAiming!=='undefined')TankAiming.reset();
   player.root.position.set(0,0,0); player.root.rotation.y=0;
   player.root.traverse(o=>{if(o.isMesh&&o.userData.om)o.material=o.userData.om;});
   WEAPONS.forEach(w=>{w.ammo=w.max;w.reloadLeft=0;});
@@ -85,7 +96,10 @@ function startMission(i){
   aimPoint.set(0,0,40);
   paused=false; document.body.classList.remove('paused');
   state='play'; document.body.dataset.state='play';
-  if(curMission.def.operation==='opening-convoy')OpeningOperation.start(curMission);
+  if(curMission.def.operation==='opening-convoy'){
+    OpeningOperation.start(curMission);
+    OpeningCinematic.start(SceneLibrary.getScene(curMission.def.sceneId));
+  }
   refreshWeaponSlots();
   showBanner(`ماموریت ${faNum(i+1)} — ${MISSIONS[i].n}`,objectiveText(MISSIONS[i]));
   showScreen(null);
@@ -131,6 +145,7 @@ function animate(){
         comboT=Math.max(0,comboT-wdt);
         if(comboT<=0)comboN=0;
         updatePlayer(wdt); updateEnemies(wdt,t); updateBullets(wdt);
+        CombatAwareness.update(wdt);
         updateDirector(wdt); updateWrecks(wdt); updatePending(wdt);
         updatePowerups(wdt); updateFX(wdt,t); updateHUD(); drawRadar();
         if(curMission&&curMission.done){
@@ -149,6 +164,7 @@ function animate(){
       }else{
         updateFX(wdt,t);
       }
+      if(typeof CharacterManager!=='undefined')CharacterManager.update(wdt);
     }
     updateCamera(dt);
     updateEngine();

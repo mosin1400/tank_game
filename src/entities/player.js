@@ -1,14 +1,25 @@
 /* ================= بازیکن ================= */
 function updatePlayer(dt){
-  if(player.dead)return;
+  if(player.dead||cinematicControlsLocked)return;
   let thr=0,turn=0;
   if(keys.KeyW||keys.ArrowUp)thr=1;
   if(keys.KeyS||keys.ArrowDown)thr=-1;
   if(keys.KeyA||keys.ArrowLeft)turn+=1;
   if(keys.KeyD||keys.ArrowRight)turn-=1;
   if(stickMove.id!==null){thr=-stickMove.vy;turn=-stickMove.vx*1.2;}
+  if(typeof TankAiming!=='undefined'){
+    const aimingInput={
+      shift:!!(keys.ShiftLeft||keys.ShiftRight),up:!!keys.ArrowUp,down:!!keys.ArrowDown,
+      left:!!keys.ArrowLeft,right:!!keys.ArrowRight,throttle:thr,turn,traverseScale:TankDamage.modifiers(player).traverse
+    };
+    if(keys.KeyW||keys.KeyS)aimingInput.wasdThrottle=(keys.KeyW?1:0)-(keys.KeyS?1:0);
+    if(keys.KeyA||keys.KeyD)aimingInput.wasdTurn=(keys.KeyA?1:0)-(keys.KeyD?1:0);
+    const aiming=TankAiming.update(dt,aimingInput);
+    thr=aiming.throttle;turn=aiming.turn;
+  }
   player.yaw+=clamp(turn,-1,1)*1.7*dt;
-  if(thr!==0)player.speed=clamp(player.speed+thr*9*dt,-7,13);
+  const moduleMods=TankDamage.modifiers(player);
+  if(thr!==0)player.speed=clamp(player.speed+thr*9*dt,-7*moduleMods.speed,13*moduleMods.speed);
   else player.speed*=Math.exp(-2.2*dt);
   const fwd=new THREE.Vector3(Math.sin(player.yaw),0,Math.cos(player.yaw));
   player.pos.addScaledVector(fwd,player.speed*dt);
@@ -36,14 +47,6 @@ function updatePlayer(dt){
     const back=player.pos.clone().addScaledVector(fwd,-3.2); back.y=0.3;
     spawnSmoke(back,1,{opacity:0.28,vy:1.2,color:0x9a8f74,maxLife:1.4});
   }
-  let desiredWorld;
-  if(stickAim.id!==null&&Math.hypot(stickAim.vx,stickAim.vy)>0.2)
-    desiredWorld=player.yaw+Math.atan2(stickAim.vx,stickAim.vy);
-  else desiredWorld=Math.atan2(aimPoint.x-player.pos.x,aimPoint.z-player.pos.z);
-  let local=desiredWorld-player.yaw-player.turret.rotation.y;
-  while(local>Math.PI)local-=Math.PI*2; while(local<-Math.PI)local+=Math.PI*2;
-  player.turret.rotation.y+=clamp(local,-2.4*dt,2.4*dt);
-  player.gun.rotation.x=-0.01;
   player.recoil*=Math.exp(-9*dt);
   player.gun.position.z=1.35-player.recoil;
   player.reload-=dt;

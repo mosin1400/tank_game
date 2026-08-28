@@ -40,7 +40,7 @@ function shootShell(w){
 }
 function firePlayer(){
   if(player.reload>0||state!=='play'||player.dead)return;
-  player.reload=WEAPONS[curWeapon].reload*(buffRapid>0?0.45:1);
+  player.reload=WEAPONS[curWeapon].reload*(buffRapid>0?0.45:1)*TankDamage.modifiers(player).reload;
   shootWeapon();
 }
 function fireMG(){

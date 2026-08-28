@@ -62,7 +62,13 @@
       var human=new makehuman.Human({baseUrl:'/tools/cache/makehuman-data-package/package/public/data/',model:'human_full_size.json',defaultSkin:'middleage_caucasian_male/middleage_caucasian_male.json'});
       await human.loadModel(); await human.loadTargets();
       human.minUpdateInterval=0;
-      human.targets.applyTargets(); human.onElementsNeedUpdate();
+      var neutralVertices=human.geometry.vertices.map(function(vertex){return vertex.clone();});
+      var initialGender=human.factors.getGender();
+      human.factors.setGender(1);
+      human.mesh.geometry._bufferGeometry=human.mesh.geometry._bufferGeometry||{};
+      var maleApplied=human.targets.applyTargets(); human.onElementsNeedUpdate();
+      var maleDelta=human.geometry.vertices.reduce(function(total,vertex,index){return total+vertex.distanceTo(neutralVertices[index]);},0);
+      write('جنسیت اولیه: '+initialGender.toFixed(2)+' | جنسیت خروجی: '+human.factors.getGender().toFixed(2)+' | target: '+(maleApplied?'اعمال شد':'بدون تغییر')+' | تغییر هندسه: '+maleDelta.toFixed(3));
       baseVertices=human.geometry.vertices.map(function(vertex){return vertex.clone();});
       for(var index=0;index<presets.length;index++)await exportPreset(human,presets[index]);
       write('تمام شد. شش مدل در tools/raw-character/makehuman-js/ آماده‌اند.');

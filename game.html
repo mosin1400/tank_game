@@ -28,7 +28,7 @@
   "three/addons/": "./vendor/three/examples/jsm/"
 }}
 </script>
-<link rel="stylesheet" href="styles/game.css">
+<link rel="stylesheet" href="styles/game.css?v=20260828-combat-v3">
 <link rel="stylesheet" href="styles/profile.css">
 <link rel="stylesheet" href="styles/campaign-map.css">
 </head>
@@ -37,6 +37,8 @@
 <div class="vignette"></div>
 <div id="dmg"></div>
 <div id="dmgdir"></div>
+<div id="cinematicSubtitle" role="status" aria-live="polite"></div>
+<div id="tacticalCommands" aria-label="فرمان‌های تاکتیکی"><button id="cmdCover">F1 پناه</button><button id="cmdAttack">F2 حمله</button><button id="cmdRetreat">F3 عقب‌نشینی</button></div>
 
 <div id="hud">
   <div id="stats" class="panel">
@@ -195,7 +197,7 @@
 <div id="errToast"></div>
 
 <!-- ══════════ اسکریپت راه‌انداز: تشخیص خطا + انتخاب سرور + تزریق importmap ══════════ -->
-<script src="src/boot.js" defer></script>
+<script src="src/boot.js?v=20260828-combat-v3" defer></script>
 
 <!-- ══════════ کد بازی (بعد از آماده شدن importmap اجرا می‌شود) ══════════ -->
 

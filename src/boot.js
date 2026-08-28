@@ -67,20 +67,21 @@
     }
     return {three:CDNs[0]+'/build/three.module.min.js',addons:CDNs[0]+'/examples/jsm/',label:CDNs[0]};
   }
+  var BUILD_VERSION='20260828-combat-v3';
   var GAME_SCRIPTS=[
-    'src/core/runtime.js','src/assets/character-roster.js','src/entities/character-wardrobe.js','src/entities/animation-manager.js','src/render/renderer.js','src/scenes/scene-01.js','src/scenes/scene-library.js','src/scenes/scene-builder.js','src/world/battlefield.js',
+    'src/core/runtime.js','src/assets/character-roster.js','src/entities/character-wardrobe.js','src/entities/animation-manager.js','src/entities/weapon-models.js','src/entities/character-combat.js','src/entities/character-navigation.js','src/entities/tactical-command.js','src/entities/character-manager.js','src/entities/tank-aiming.js','src/render/renderer.js','src/scenes/scene-01.js','src/scenes/scene-library.js','src/scenes/scene-builder.js','src/world/battlefield.js',
     'src/combat/effects.js','src/audio/audio.js','src/missions/definitions.js',
     'src/campaign/mission-data.js','src/campaign/campaign-state.js',
     'src/profile/profile-view-model.js','src/profile/profile-store.js','src/profile/profile-ui.js',
-    'src/entities/t34.js','src/entities/panzer.js','src/entities/convoy.js','src/combat/projectiles.js',
-    'src/input/controls.js','src/combat/combat.js','src/missions/operation-controller.js','src/missions/director.js',
+    'src/entities/t34.js','src/entities/panzer.js','src/entities/convoy.js','src/combat/destructible-registry.js','src/combat/combat-awareness.js','src/combat/tank-damage.js','src/combat/impact-system.js','src/combat/projectiles.js',
+    'src/input/controls.js','src/combat/combat.js','src/cinematics/opening-cinematic.js','src/missions/operation-controller.js','src/missions/director.js',
     'src/entities/player.js','src/ui/game-ui.js','src/ui/campaign-map-model.js',
     'src/ui/mission-briefing.js','src/ui/campaign-map.js','src/ui/screens.js','src/main.js'
   ];
   function loadGameScripts(i){
     if(i>=GAME_SCRIPTS.length)return;
     var s=document.createElement('script');
-    s.src=GAME_SCRIPTS[i];
+    s.src=GAME_SCRIPTS[i]+'?v='+BUILD_VERSION;
     s.onload=function(){loadGameScripts(i+1);};
     s.onerror=function(){window.__showError('بارگذاری فایل بازی ناموفق بود: '+GAME_SCRIPTS[i]);};
     document.body.appendChild(s);

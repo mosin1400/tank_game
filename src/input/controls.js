@@ -5,6 +5,10 @@ const vecShim=(x,y,z)=>({x,y,z,isVector3:true,set(a,b,c){this.x=a;this.y=b;this.
 let aimPoint=vecShim(0,0,40);
 const stickMove={id:null,bx:0,by:0,vx:0,vy:0,el:null,knob:null};
 const stickAim={id:null,bx:0,by:0,vx:0,vy:0,el:null,knob:null};
+function issueTacticalCommand(command){
+  const live=enemies.filter(e=>!e.dead),target=live.length?live.reduce((best,e)=>Math.hypot(e.root.position.x-player.pos.x,e.root.position.z-player.pos.z)<Math.hypot(best.root.position.x-player.pos.x,best.root.position.z-player.pos.z)?e:best).root:aimPoint;
+  return TacticalCommand.issue(command,target);
+}
 function initDom(){
   uiScore=document.getElementById('uiScore'); uiMission=document.getElementById('uiMission');
   uiFoes=document.getElementById('uiFoes'); uiKills=document.getElementById('uiKills');
@@ -22,6 +26,7 @@ function initDom(){
   stickAim.el=document.getElementById('stickAim'); stickAim.knob=document.getElementById('knobAim');
 
   addEventListener('keydown',e=>{
+    if(typeof OpeningCinematic!=='undefined'&&OpeningCinematic.isActive()&&OpeningCinematic.requestSkip(e))return;
     if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
     keys[e.code]=true;
     if(e.code==='Space')fireHeld=true;
@@ -32,6 +37,9 @@ function initDom(){
     if(e.code==='Digit2')selectWeapon(1);
     if(e.code==='Digit3')selectWeapon(2);
     if(e.code==='Digit4')selectWeapon(3);
+    if(state==='play'&&['F1','F2','F3'].includes(e.code)){
+      e.preventDefault();issueTacticalCommand(e.code==='F1'?'cover':e.code==='F2'?'attack':'retreat');
+    }
   });
   addEventListener('keydown',e=>{
     if(e.ctrlKey&&e.shiftKey&&e.altKey&&(e.key==='r'||e.key==='R'||e.code==='KeyR')){
@@ -53,6 +61,9 @@ function initDom(){
     if(t>0)aimPoint.copy(ray.ray.origin).addScaledVector(ray.ray.direction,t);
   });
   renderer.domElement.addEventListener('mousedown',e=>{
+    if(typeof OpeningCinematic!=='undefined'&&OpeningCinematic.isActive()){
+      OpeningCinematic.requestSkip({type:'click',button:e.button,preventDefault:()=>e.preventDefault()});return;
+    }
     if(state!=='play')return;
     if(e.button===0)fireHeld=true;
     if(e.button===2)mgHeld=true;
@@ -109,21 +120,47 @@ function initDom(){
     renderer.setSize(innerWidth,innerHeight);
     if(composer)composer.setSize(innerWidth,innerHeight);
   });
+  [['cmdCover','cover'],['cmdAttack','attack'],['cmdRetreat','retreat']].forEach(([id,command])=>{
+    const button=document.getElementById(id);if(button)button.addEventListener('click',e=>{e.stopPropagation();if(state==='play')issueTacticalCommand(command);});
+  });
+  addEventListener('touchstart',e=>{
+    if(typeof OpeningCinematic!=='undefined'&&OpeningCinematic.isActive())OpeningCinematic.requestSkip(e);
+  },{passive:false});
   return profileUiAvailable&&campaignMapAvailable;
+}
+function pointHitsCollider(pos,o,padding=0){
+  if(o.type==='circle')return Math.hypot(pos.x-o.x,pos.z-o.z)<=o.r+padding;
+  const angle=o.type==='obb'?(o.ry||0):0,cos=Math.cos(angle),sin=Math.sin(angle);
+  const dx=pos.x-o.x,dz=pos.z-o.z;
+  const lx=cos*dx-sin*dz,lz=sin*dx+cos*dz;
+  return Math.abs(lx)<=o.hw+padding&&Math.abs(lz)<=o.hd+padding;
 }
 function resolveCollisions(pos,r,isPlayer,selfE){
   const pushC=(cx,cz,cr)=>{
     const dx=pos.x-cx,dz=pos.z-cz,d=Math.hypot(dx,dz),m=r+cr;
     if(d<m&&d>0.001){pos.x=cx+dx/d*m;pos.z=cz+dz/d*m;}
   };
+  const pushBox=(o,angle=0)=>{
+    const cos=Math.cos(angle),sin=Math.sin(angle),dx=pos.x-o.x,dz=pos.z-o.z;
+    let lx=cos*dx-sin*dz,lz=sin*dx+cos*dz;
+    const cx=clamp(lx,-o.hw,o.hw),cz=clamp(lz,-o.hd,o.hd);
+    const ox=lx-cx,oz=lz-cz,d=Math.hypot(ox,oz);
+    if(d>=r)return;
+    if(d>0.001){lx=cx+ox/d*r;lz=cz+oz/d*r;}
+    else{
+      const left=Math.abs(lx+o.hw),right=Math.abs(o.hw-lx);
+      const back=Math.abs(lz+o.hd),front=Math.abs(o.hd-lz);
+      const edge=Math.min(left,right,back,front);
+      if(edge===left)lx=-o.hw-r;
+      else if(edge===right)lx=o.hw+r;
+      else if(edge===back)lz=-o.hd-r;
+      else lz=o.hd+r;
+    }
+    pos.x=o.x+cos*lx+sin*lz; pos.z=o.z-sin*lx+cos*lz;
+  };
   for(const o of staticObs){
     if(o.type==='circle')pushC(o.x,o.z,o.r);
-    else{
-      const cx=clamp(pos.x,o.x-o.hw,o.x+o.hw),cz=clamp(pos.z,o.z-o.hd,o.z+o.hd);
-      const dx=pos.x-cx,dz=pos.z-cz,d=Math.hypot(dx,dz);
-      if(d<r){if(d>0.001){pos.x=cx+dx/d*r;pos.z=cz+dz/d*r;}
-        else pos.z=o.z+(pos.z>=o.z?o.hd+r:-o.hd-r);}
-    }
+    else pushBox(o,o.type==='obb'?(o.ry||0):0);
   }
   for(const w of wreckObs)pushC(w.x,w.z,w.r);
   for(const t of trees)if(t.alive)pushC(t.x,t.z,0.55);

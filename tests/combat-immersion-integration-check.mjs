@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const boot=fs.readFileSync(new URL('../src/boot.js',import.meta.url),'utf8');
+const html=fs.readFileSync(new URL('../game.html',import.meta.url),'utf8');
+const order=['destructible-registry.js','combat-awareness.js','tank-damage.js','impact-system.js','projectiles.js','opening-cinematic.js','operation-controller.js','director.js'];
+for(let i=1;i<order.length;i++)assert.ok(boot.indexOf(order[i-1])<boot.indexOf(order[i]),`${order[i-1]} must load before ${order[i]}`);
+for(const module of ['weapon-models.js','character-combat.js','character-navigation.js','tactical-command.js'])assert.ok(boot.indexOf(module)<boot.indexOf('character-manager.js'),`${module} must load before character-manager`);
+assert.ok(boot.indexOf('tank-aiming.js')<boot.indexOf('player.js'));
+assert.match(boot,/20260828-combat-v3/);assert.match(html,/20260828-combat-v3/);
+assert.doesNotMatch(boot,/character-v11|mixamo-v2/);assert.doesNotMatch(html,/character-v11|mixamo-v2/);
+console.log('combat-immersion-integration-check: PASS');

@@ -14,6 +14,7 @@ function action(name) {
   return {
     name,
     enabled: false,
+    timeScale: 1,
     reset() { calls.push(`${name}:reset`); return this; },
     play() { calls.push(`${name}:play`); return this; },
     stop() { calls.push(`${name}:stop`); return this; },
@@ -26,7 +27,7 @@ const mixer = {
   update(dt) { this.updates.push(dt); },
   stopAllAction() { calls.push('mixer:stopAll'); }
 };
-const clips = ['idle', 'walk', 'run', 'aim', 'fall', 'talk', 'point'].map((name) => ({ name }));
+const clips = ['idle', 'walk', 'run', 'aim', 'fall', 'talk', 'point', 'rifle-walk'].map((name) => ({ name }));
 const controller = AnimationManager.create({ mixer, clips, initial: 'idle' });
 
 assert.equal(controller.state(), 'idle');
@@ -47,6 +48,11 @@ controller.update(0.25);
 assert.deepEqual(mixer.updates, [0.25]);
 assert.equal(controller.setState('talk', 0.45), true);
 assert.ok(calls.includes('walk:fade:talk:0.45:true'));
+assert.equal(controller.setState('rifle-aim'), true, 'public state alias should resolve to a baked clip');
+assert.equal(controller.state(), 'rifle-aim');
+assert.ok(calls.includes('talk:fade:aim:0.2:true'));
+assert.equal(controller.setState('rifle-walk'), true, 'armed locomotion must have its own clip');
+assert.equal(controller.actionTimeScale('rifle-walk'), 0.58, 'rifle run must play slowly as an armed walk');
 controller.dispose();
 assert.equal(controller.disposed, true);
 assert.ok(calls.includes('mixer:stopAll'));

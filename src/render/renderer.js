@@ -147,12 +147,19 @@ function radialTex(size,stops){
   g.fillStyle=gr; g.fillRect(0,0,size,size);
   const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
 }
+function loadRepeatTexture(path,repeat){
+  const texture=new THREE.TextureLoader().load(path);
+  texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+  texture.repeat.set(repeat[0],repeat[1]);texture.anisotropy=maxAniso;texture.colorSpace=THREE.SRGBColorSpace;
+  return texture;
+}
 function makeTextures(){
   texOlive=canvasTexture(512,paintOlive);
   texCast=canvasTexture(512,paintCast);
   texRust=canvasTexture(512,paintRust);
   texGray=canvasTexture(512,paintGray);
-  texGround=canvasTexture(512,paintGround); texGround.repeat.set(80,80);
+  texGround=loadRepeatTexture('assets/images/m01-muddy-ground.png',[48,48]);
+  texTankSteel=loadRepeatTexture('assets/images/tank-worn-olive-steel.png',[2.5,2.5]);
   texWall=canvasTexture(256,paintWall);
   texSky=canvasTexture(512,paintSky);
   texSmoke=radialTex(128,[[0,'rgba(255,255,255,.6)'],[0.4,'rgba(255,255,255,.35)'],[1,'rgba(255,255,255,0)']]);
@@ -160,16 +167,16 @@ function makeTextures(){
 }
 function mat(o){ return new THREE.MeshStandardMaterial(Object.assign({envMapIntensity:0.45},o)); }
 function makeMaterials(){
-  matOlive=mat({map:texOlive,bumpMap:texOlive,bumpScale:0.05,roughness:0.82,metalness:0.12});
-  matCast=mat({map:texCast,bumpMap:texCast,bumpScale:0.09,roughness:0.86,metalness:0.10});
+  matOlive=mat({map:texTankSteel,bumpMap:texTankSteel,bumpScale:0.045,color:0xb5bb91,roughness:0.82,metalness:0.12});
+  matCast=mat({map:texTankSteel,bumpMap:texTankSteel,bumpScale:0.075,color:0x8c9669,roughness:0.86,metalness:0.10});
   matRust=mat({map:texRust,bumpMap:texRust,bumpScale:0.12,roughness:0.95,metalness:0.2});
   matGray=mat({map:texGray,bumpMap:texGray,bumpScale:0.05,roughness:0.8,metalness:0.18});
   matGrayL=mat({map:texGray,color:0xc6c6ba,roughness:0.78,metalness:0.2});
   matGrayH=mat({map:texGray,color:0x87877e,roughness:0.82,metalness:0.22});
-  matPz1=mat({map:texGray,color:0xc9c0a6,roughness:0.82,metalness:0.18});
-  matPz2=mat({map:texGray,color:0x8a8666,roughness:0.84,metalness:0.20});
-  matPz3=mat({map:texGray,color:0x55574a,roughness:0.86,metalness:0.22});
-  matPz4=mat({map:texGray,color:0x3a3832,roughness:0.88,metalness:0.26});
+  matPz1=mat({map:texTankSteel,bumpMap:texTankSteel,bumpScale:.035,color:0xc9c0a6,roughness:0.82,metalness:0.18});
+  matPz2=mat({map:texTankSteel,bumpMap:texTankSteel,bumpScale:.04,color:0x8a8666,roughness:0.84,metalness:0.20});
+  matPz3=mat({map:texTankSteel,bumpMap:texTankSteel,bumpScale:.045,color:0x55574a,roughness:0.86,metalness:0.22});
+  matPz4=mat({map:texTankSteel,bumpMap:texTankSteel,bumpScale:.05,color:0x3a3832,roughness:0.88,metalness:0.26});
   matDark=mat({color:0x2b2d26,roughness:0.9,metalness:0.15});
   matChar=mat({color:0x272219,roughness:0.97,metalness:0.05});
   matRoof=mat({color:0x4a463c,roughness:0.95});
