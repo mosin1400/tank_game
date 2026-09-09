@@ -1,6 +1,6 @@
 /* ================= جلوه‌ها ================= */
 function spawnFire(p,n,spd,life){
-  n=Math.max(1,Math.ceil(n*(typeof qualityEffectsScale==='number'?qualityEffectsScale:1)));
+  n=Math.ceil(n*(typeof qualityEffectsScale==='number'?qualityEffectsScale:1));if(n<1)return;
   for(let i=0;i<n;i++){
     const k=fireCursor; fireCursor=(fireCursor+1)%FIRE_N;
     firePos[k*3]=p.x+rand(-0.4,0.4); firePos[k*3+1]=p.y+rand(0,0.6); firePos[k*3+2]=p.z+rand(-0.4,0.4);
@@ -21,7 +21,7 @@ function spawnFire(p,n,spd,life){
   }
 }
 function spawnSmoke(p,n,opts={}){
-  n=Math.max(1,Math.ceil(n*(typeof qualityEffectsScale==='number'?qualityEffectsScale:1)));
+  n=Math.ceil(n*(typeof qualityEffectsScale==='number'?qualityEffectsScale:1));if(n<1)return;
   if(typeof CombatAwareness!=='undefined'&&(opts.opacity||.4)>=.4&&n>=2){
     CombatAwareness.registerSmoke({position:p,radius:Math.max(1.5,Math.sqrt(n)*1.2),density:Math.min(1,opts.opacity||.4),life:opts.maxLife||2.4});
   }
