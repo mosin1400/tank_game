@@ -115,11 +115,12 @@ try{
   });
   TacticalCommand.configure({navigation:CharacterNavigation,onIssued:(command,count)=>showBanner('فرمان تاکتیکی',`${faNum(count)} نیرو فرمان ${command==='cover'?'پناه':command==='attack'?'حمله':command==='rally'?'تجمع کنار تانک':'عقب‌نشینی'} را دریافت کردند.`)});
   if(!campaignUiReady)console.warn('بخشی از رابط کمپین آماده نیست.');
-  showProfileSelect();
+  showScreen(null);
 
   step('آماده نبرد!',100);
   animate();
-  setTimeout(()=>document.getElementById('loading').classList.add('done'),400);
+  if(window.EpicIntro)window.EpicIntro.markLoaded();
+  else setTimeout(()=>{document.getElementById('loading').classList.add('done');showMainMenu();},400);
 }catch(err){
   console.error(err);
   window.__showError((err&&err.message)||String(err),

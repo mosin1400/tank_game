@@ -1,10 +1,15 @@
 /* ================= صفحه‌ها ================= */
-const SCREENS=['profileSelect','missions','brief','over','victory'];
+const SCREENS=['mainMenu','profileSelect','missions','brief','over','victory'];
 function showScreen(id){
   SCREENS.forEach(s=>{
     const screen=document.getElementById(s);
     if(screen)screen.classList.toggle('on',s===id);
   });
+}
+function showMainMenu(){
+  state='menu'; paused=false; document.body.dataset.state='menu';
+  stopMusic(); document.body.classList.remove('paused');
+  showScreen('mainMenu');
 }
 function totalStars(){
   let n=0; for(let i=0;i<MISSIONS.length;i++)n+=prog.s[i]||0; return n;

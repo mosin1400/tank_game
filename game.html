@@ -28,11 +28,17 @@
   "three/addons/": "./vendor/three/examples/jsm/"
 }}
 </script>
-<link rel="stylesheet" href="styles/game.css?v=20260828-combat-v3">
+<link rel="stylesheet" href="styles/game.css?v=20260909-epic-intro-v1">
 <link rel="stylesheet" href="styles/profile.css">
 <link rel="stylesheet" href="styles/campaign-map.css">
 </head>
 <body data-state="menu">
+<div id="epicIntro" aria-hidden="true">
+  <div class="epic-grain"></div>
+  <div class="epic-logo"><span>خط آهن</span><strong>آخر</strong><i>تی-۳۴ / ۸۵</i></div>
+  <div class="epic-line"></div>
+  <p>کمپین سینمایی تاکتیکی</p>
+</div>
 <div id="app"></div>
 <div class="vignette"></div>
 <div id="dmg"></div>
@@ -89,6 +95,20 @@
 </div>
 <button id="btnMG">تیربار</button>
 <button id="btnFire">شلیک</button>
+
+<div id="mainMenu" class="overlay" aria-label="منوی اصلی">
+  <video id="menuVideo" autoplay muted loop playsinline aria-hidden="true"></video>
+  <div class="main-menu-shade"></div>
+  <section class="main-menu-content">
+    <div class="main-menu-mark">T-34/85</div>
+    <p class="main-menu-kicker">یک کارزار از فولاد، آتش و آخرین خط آهن</p>
+    <h1>خط آهن <span>آخر</span></h1>
+    <div class="main-menu-rule"></div>
+    <button id="btnMainEnter" class="main-menu-enter">ورود به کارزار <b>←</b></button>
+    <button id="btnMainSettings" class="main-menu-settings">تنظیمات <span>⚙</span></button>
+    <p class="main-menu-note">فرماندهی تی-۳۴/۸۵ · ۴۰ مأموریت</p>
+  </section>
+</div>
 
 <div id="profileSelect" class="overlay">
   <section class="profile-shell panel" aria-labelledby="profileTitle">
@@ -198,7 +218,7 @@
 <div id="errToast"></div>
 
 <!-- ══════════ اسکریپت راه‌انداز: تشخیص خطا + انتخاب سرور + تزریق importmap ══════════ -->
-<script src="src/boot.js?v=20260828-combat-v3" defer></script>
+<script src="src/boot.js?v=20260909-epic-intro-v1" defer></script>
 
 <!-- ══════════ کد بازی (بعد از آماده شدن importmap اجرا می‌شود) ══════════ -->
 

@@ -119,6 +119,10 @@ function initDom(){
   document.getElementById('btnMute').addEventListener('click',toggleMute);
   document.getElementById('btnSettings').addEventListener('click',()=>GameSettings.toggle());
   GameSettings.init();
+  const mainEnter=document.getElementById('btnMainEnter');
+  if(mainEnter)mainEnter.addEventListener('click',showProfileSelect);
+  const mainSettings=document.getElementById('btnMainSettings');
+  if(mainSettings)mainSettings.addEventListener('click',()=>GameSettings.toggle());
 
   addEventListener('resize',()=>{
     camera.aspect=innerWidth/innerHeight;

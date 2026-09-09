@@ -18,17 +18,24 @@
     border:1px solid rgba(168,180,106,.26); border-radius:12px; box-shadow:0 6px 24px rgba(0,0,0,.35); }
 
   /* ---------- صفحه بارگیری ---------- */
-  #loading{ position:fixed; inset:0; z-index:50; background:#0c0e0a; display:flex;
+  #loading{ position:fixed; inset:0; z-index:50; background:linear-gradient(180deg,rgba(6,8,5,.5),rgba(5,7,4,.92)),url('../assets/images/m01-muddy-ground.png') center/cover; display:flex;
     align-items:center; justify-content:center; flex-direction:column; transition:opacity .7s;
     padding:16px; overflow-y:auto; }
   #loading.done{ opacity:0; pointer-events:none; }
   .ld-t{ font-size:38px; font-weight:800; color:#e6ead1; }
   .ld-t em{ font-style:normal; color:#aab668; }
-  .ld-bar{ width:min(320px,78vw); height:12px; margin:20px auto 10px; border-radius:7px;
+  .ld-bar{ width:min(620px,84vw); height:14px; margin:calc(min(23vh,180px)) auto 10px; border-radius:7px;
     background:rgba(170,182,104,.14); border:1px solid rgba(170,182,106,.45); overflow:hidden; }
   #ldFill{ height:100%; width:0%; background:linear-gradient(90deg,#8a9a4e,#c2ce84);
     border-radius:6px; transition:width .35s ease; box-shadow:0 0 12px rgba(170,182,104,.5); }
   .ld-s{ font-size:12.5px; color:#9aa17c; animation:pulse 1.4s infinite; }
+  #epicIntro{position:fixed;inset:0;z-index:80;display:grid;place-items:center;overflow:hidden;background:#050604;color:#e6ead1;transition:opacity .8s ease,visibility .8s;}
+  #epicIntro.out{opacity:0;visibility:hidden;pointer-events:none;}
+  .epic-grain{position:absolute;inset:-30%;opacity:.24;background:repeating-radial-gradient(circle at 30% 40%,#fff 0 1px,transparent 1px 4px);animation:epicGrain .22s steps(2) infinite;}
+  .epic-logo{position:relative;z-index:1;text-align:center;letter-spacing:.12em;text-shadow:0 10px 34px #000;animation:epicLogo 2.35s cubic-bezier(.16,.76,.18,1) both;}
+  .epic-logo span,.epic-logo strong,.epic-logo i{display:block;font-style:normal;}.epic-logo span{font-size:clamp(22px,3.5vw,43px);font-weight:400;}.epic-logo strong{font-size:clamp(72px,13vw,164px);line-height:.82;color:#aab668;font-weight:800;}.epic-logo i{margin-top:22px;font-size:13px;letter-spacing:.45em;color:#c5cca0;}.epic-line{position:absolute;width:min(430px,63vw);height:1px;background:#aab668;box-shadow:0 0 18px #aab668;transform:translateY(118px);animation:epicLine 2.1s ease both;}.epic-logo+p{position:absolute;transform:translateY(154px);font-size:11px;letter-spacing:.26em;color:#7e865c;animation:epicText 2.2s ease both;}
+  @keyframes epicLogo{0%{opacity:0;transform:scale(1.12);filter:blur(10px)}30%{opacity:1;filter:blur(0)}80%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.97);filter:blur(3px)}}@keyframes epicLine{0%,22%{width:0;opacity:0}44%,78%{opacity:1}100%{opacity:0;width:min(520px,76vw)}}@keyframes epicText{0%,38%{opacity:0}52%,80%{opacity:1}100%{opacity:0}}@keyframes epicGrain{to{transform:translate(3%,2%)}}
+  #mainMenu{z-index:35;background:linear-gradient(90deg,rgba(6,8,4,.94) 0%,rgba(7,9,5,.64) 40%,rgba(7,9,5,.18) 100%),url('../assets/images/m01-muddy-ground.png') center/cover;isolation:isolate;}.main-menu-shade{position:absolute;inset:0;background:radial-gradient(circle at 78% 30%,rgba(170,182,104,.2),transparent 26%),linear-gradient(0deg,rgba(0,0,0,.58),transparent 45%);z-index:-1;}#menuVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2;opacity:.72;}.main-menu-content{width:min(560px,88vw);margin-right:clamp(8vw,15vw,20vw);color:#e6ead1;text-align:right;}.main-menu-mark{font-size:11px;letter-spacing:.42em;color:#aab668;margin-bottom:26px;}.main-menu-kicker{font-size:12px;color:#bbc293;letter-spacing:.04em;margin:0 0 10px;}.main-menu-content h1{font-size:clamp(56px,9vw,112px);line-height:.9;margin:0;font-weight:800;text-shadow:0 8px 25px #000;}.main-menu-content h1 span{color:#aab668;}.main-menu-rule{height:2px;width:190px;margin:28px 0;background:linear-gradient(90deg,#aab668,transparent);}.main-menu-enter,.main-menu-settings{font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:space-between;width:min(330px,80vw);border:1px solid rgba(205,216,146,.54);color:#f0f2dc;padding:15px 19px;margin:10px 0;font-size:15px;background:rgba(20,25,13,.73);transition:.2s;}.main-menu-enter{background:#aab668;color:#161b0c;border-color:#cbd79a;font-weight:800;}.main-menu-enter b{font-size:23px;line-height:12px;}.main-menu-enter:hover,.main-menu-settings:hover{transform:translateX(-6px);filter:brightness(1.12);}.main-menu-note{margin-top:27px;color:#899064;font-size:11px;}
   @keyframes pulse{ 0%,100%{ opacity:.45; } 50%{ opacity:1; } }
   #errbox{ display:none; margin:18px auto 0; max-width:540px; width:100%; text-align:right;
     background:rgba(88,20,13,.9); border:1px solid #e0604a; border-radius:12px;
