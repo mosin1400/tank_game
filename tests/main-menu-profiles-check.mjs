@@ -8,6 +8,7 @@ const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const html=read('game.html');
 const profileUi=read('src/profile/profile-ui.js');
 const profileStore=read('src/profile/profile-store.js');
+const campaignMap=read('src/ui/campaign-map.js');
 
 assert.match(html,/id="menuProfileSlots"/,'main menu needs profile slots');
 assert.match(html,/id="btnMenuProfileCreate"/,'main menu needs profile creation');
@@ -16,5 +17,6 @@ assert.match(profileUi,/function renderMenuProfileSlots\(/,'main menu must rende
 assert.match(profileUi,/function continueMenuProfile\(/,'main menu must launch selected profile');
 assert.match(profileStore,/function renameProfile\(/,'profile store must support renaming');
 assert.match(profileStore,/function deleteProfile\(/,'profile store must support deletion');
+assert.match(campaignMap,/profilesButton\.addEventListener\('click',showMainMenu\)/,'map profile control must return to the main menu');
 
 console.log('main menu profile checks passed');

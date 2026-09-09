@@ -50,7 +50,7 @@ function initCampaignMapUI(){
   zoomIn.addEventListener('click',()=>setCampaignMapZoom(.15));
   zoomOut.addEventListener('click',()=>setCampaignMapZoom(-.15));
   launchButton.addEventListener('click',launchSelectedCampaignMission);
-  profilesButton.addEventListener('click',showProfileSelect);
+  profilesButton.addEventListener('click',showMainMenu);
   viewport.addEventListener('wheel',event=>{event.preventDefault();setCampaignMapZoom(event.deltaY<0?.1:-.1);},{passive:false});
   viewport.addEventListener('pointerdown',event=>{if(campaignMapScale<=1)return;campaignMapDrag={x:event.clientX-campaignMapOffset.x,y:event.clientY-campaignMapOffset.y};viewport.setPointerCapture(event.pointerId);});
   viewport.addEventListener('pointermove',event=>{if(!campaignMapDrag)return;campaignMapOffset.x=event.clientX-campaignMapDrag.x;campaignMapOffset.y=event.clientY-campaignMapDrag.y;applyCampaignMapTransform();});
