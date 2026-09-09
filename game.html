@@ -28,7 +28,7 @@
   "three/addons/": "./vendor/three/examples/jsm/"
 }}
 </script>
-<link rel="stylesheet" href="styles/game.css?v=20260909-profile-drawer-v1">
+<link rel="stylesheet" href="styles/game.css?v=20260909-loading-video-v1">
 <link rel="stylesheet" href="styles/profile.css">
 <link rel="stylesheet" href="styles/campaign-map.css">
 </head>
@@ -97,7 +97,6 @@
 <button id="btnFire">شلیک</button>
 
 <div id="mainMenu" class="overlay" aria-label="منوی اصلی">
-  <video id="menuVideo" autoplay muted loop playsinline aria-hidden="true"></video>
   <div class="main-menu-shade"></div>
   <section class="main-menu-content">
     <div class="main-menu-mark">T-34/85</div>
@@ -217,6 +216,7 @@
 </div>
 
 <div id="loading">
+  <video id="loadingVideo" autoplay muted loop playsinline aria-hidden="true"><source src="assets/video/loading-intro.mp4" type="video/mp4"></video>
   <div class="ld-t">تی-۳۴<em>/۸۵</em></div>
   <div class="ld-bar"><div id="ldFill"></div></div>
   <div class="ld-s" id="ldStep">آماده‌سازی…</div>
@@ -226,7 +226,7 @@
 <div id="errToast"></div>
 
 <!-- ══════════ اسکریپت راه‌انداز: تشخیص خطا + انتخاب سرور + تزریق importmap ══════════ -->
-<script src="src/boot.js?v=20260909-profile-drawer-v1" defer></script>
+<script src="src/boot.js?v=20260909-loading-video-v1" defer></script>
 
 <!-- ══════════ کد بازی (بعد از آماده شدن importmap اجرا می‌شود) ══════════ -->
 

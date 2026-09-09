@@ -11,7 +11,8 @@ const screens=read('src/ui/screens.js');
 
 assert.match(html,/id="epicIntro"/,'an epic logo splash must exist');
 assert.match(html,/id="mainMenu"/,'a separate main menu must exist');
-assert.match(html,/id="menuVideo"/,'the menu must reserve a video backdrop');
+assert.match(html,/id="loadingVideo"/,'the loading screen must use the supplied video');
+assert.doesNotMatch(html,/id="menuVideo"/,'the main menu must not use the loading video');
 assert.match(html,/id="btnMainSettings"/,'the main menu must expose settings');
 assert.match(screens,/['"]mainMenu['"]/,'the screen router must know the main menu');
 assert.match(runtime,/EpicIntro\.markLoaded\(\)/,'runtime must release the intro only after boot completes');
