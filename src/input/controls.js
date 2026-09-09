@@ -37,8 +37,11 @@ function initDom(){
     if(e.code==='Digit2')selectWeapon(1);
     if(e.code==='Digit3')selectWeapon(2);
     if(e.code==='Digit4')selectWeapon(3);
-    if(state==='play'&&['F1','F2','F3'].includes(e.code)){
-      e.preventDefault();issueTacticalCommand(e.code==='F1'?'cover':e.code==='F2'?'attack':'retreat');
+    if(e.code==='KeyC'&&state==='play'){cameraMode=(cameraMode+1)%3;showMsg(['دوربین تعقیبی','دوربین نزدیک','نمای بلند فرمانده'][cameraMode],1000);}
+    if(e.code==='KeyG'&&state==='play')deploySmokeScreen();
+    if(e.code==='KeyZ'&&state==='play')markNearestTarget();
+    if(state==='play'&&['F1','F2','F3','F4'].includes(e.code)){
+      e.preventDefault();issueTacticalCommand(e.code==='F1'?'cover':e.code==='F2'?'attack':e.code==='F3'?'retreat':'rally');
     }
   });
   addEventListener('keydown',e=>{
@@ -55,6 +58,7 @@ function initDom(){
   const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();
   addEventListener('mousemove',e=>{
     if(isCoarse)return;
+    if(e.altKey&&state==='play'){freeLookYaw=clamp(freeLookYaw+(e.movementX||0)*.004,-1.15,1.15);return;}
     ndc.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);
     ray.setFromCamera(ndc,camera);
     const t=(1.2-ray.ray.origin.y)/ray.ray.direction.y;
@@ -113,6 +117,8 @@ function initDom(){
   document.getElementById('btnQuit').addEventListener('click',()=>{paused=false;showCampaignMap();});
   document.getElementById('btnPause').addEventListener('click',togglePause);
   document.getElementById('btnMute').addEventListener('click',toggleMute);
+  document.getElementById('btnSettings').addEventListener('click',()=>GameSettings.toggle());
+  GameSettings.init();
 
   addEventListener('resize',()=>{
     camera.aspect=innerWidth/innerHeight;
@@ -120,13 +126,18 @@ function initDom(){
     renderer.setSize(innerWidth,innerHeight);
     if(composer)composer.setSize(innerWidth,innerHeight);
   });
-  [['cmdCover','cover'],['cmdAttack','attack'],['cmdRetreat','retreat']].forEach(([id,command])=>{
+  [['cmdCover','cover'],['cmdAttack','attack'],['cmdRetreat','retreat'],['cmdRally','rally']].forEach(([id,command])=>{
     const button=document.getElementById(id);if(button)button.addEventListener('click',e=>{e.stopPropagation();if(state==='play')issueTacticalCommand(command);});
   });
   addEventListener('touchstart',e=>{
     if(typeof OpeningCinematic!=='undefined'&&OpeningCinematic.isActive())OpeningCinematic.requestSkip(e);
   },{passive:false});
   return profileUiAvailable&&campaignMapAvailable;
+}
+function markNearestTarget(){
+  const live=enemies.filter(e=>!e.dead);if(!live.length){showMsg('هدف زنده‌ای برای علامت‌گذاری نیست.',1000);return false;}
+  const target=live.reduce((best,e)=>Math.hypot(e.root.position.x-player.pos.x,e.root.position.z-player.pos.z)<Math.hypot(best.root.position.x-player.pos.x,best.root.position.z-player.pos.z)?e:best);
+  showMsg(`هدف علامت‌گذاری شد: ${target.cfg.name}`,1500);issueTacticalCommand('attack');return true;
 }
 function pointHitsCollider(pos,o,padding=0){
   if(o.type==='circle')return Math.hypot(pos.x-o.x,pos.z-o.z)<=o.r+padding;

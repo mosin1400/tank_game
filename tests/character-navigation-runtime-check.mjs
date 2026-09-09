@@ -4,6 +4,7 @@ const runtime=fs.readFileSync(new URL('../src/core/runtime.js',import.meta.url),
 const manager=fs.readFileSync(new URL('../src/entities/character-manager.js',import.meta.url),'utf8');
 const screens=fs.readFileSync(new URL('../src/ui/screens.js',import.meta.url),'utf8');
 assert.match(runtime,/CharacterNavigation\.configure\(/,'runtime must provide live obstacles and enemies');
+assert.match(runtime,/getPlayer:\(\)=>player/,'navigation must receive the live friendly tank for formation following');
 assert.match(manager,/CharacterNavigation\.register\(group/,'moving characters must register for smart steering');
 assert.match(manager,/CharacterNavigation\.update\(dt\)/,'character update must advance smart navigation once');
 assert.match(screens,/CharacterNavigation\.reset\(\)/,'mission cleanup must clear navigation actors');

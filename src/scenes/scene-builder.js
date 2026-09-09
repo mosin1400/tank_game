@@ -65,6 +65,11 @@
     actor.userData.actorRole=role;
     return actor;
   }
+  function buildPhaseSignal(handle,x,z,phase){
+    const signal=new THREE.Sprite(new THREE.SpriteMaterial({map:texGlow,color:0xff7b28,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,opacity:.82}));
+    signal.position.set(x,2.2,z);signal.scale.set(4.6,6.5,1);signal.visible=phase===0;handle.root.add(signal);
+    handle.phaseSignals.push({signal,phase});return signal;
+  }
   function buildFence(parent,x,z,length,yaw,material){
     const fence=markProp(new THREE.Group(),'fence');fence.position.set(x,0,z);fence.rotation.y=yaw||0;parent.add(fence);
     for(let d=-length/2;d<=length/2+.01;d+=2.5)mkBox(fence,.14,1.8,.14,material,d,.9,0);
@@ -131,6 +136,7 @@
       handle.addCollider({type:'obb',x:p.x,z:p.z,hw:6.2,hd:2,ry:p.ry,h:3.8});
     });
     const [fuelX,,fuelZ]=layout.landmarks.fuelYard;
+    buildPhaseSignal(handle,fuelX-6,fuelZ+3,0);
     for(const offset of [[-10,4],[-3,-2],[6,3]]){
       const tank=markProp(new THREE.Mesh(new THREE.CylinderGeometry(3.3,3.3,7,20),industrialMaterial(0,0,{metalness:.5,roughness:.42})),'fuel-tank');
       tank.rotation.z=Math.PI/2; tank.position.set(fuelX+offset[0],3.2,fuelZ+offset[1]); tank.castShadow=tank.receiveShadow=true; group.add(tank);
@@ -150,6 +156,7 @@
     for(const [x,z,yaw] of [[fuelX-18,fuelZ-1,.2],[fuelX+19,fuelZ+2,-.1],[fuelX+5,fuelZ-17,1.2]])buildCableSpool(group,x,z,yaw);
     for(const [x,z] of [[fuelX-14,fuelZ-2],[fuelX+13,fuelZ+9]])handle.addCollider({type:'obb',x,z,hw:2.1,hd:1.5,ry:0,h:2.2});
     const [bridgeX,,bridgeZ]=layout.landmarks.canalBridge;
+    buildPhaseSignal(handle,bridgeX+16,bridgeZ+10,1);
     markProp(addBox(56,.04,8,mat({color:0x253c40,roughness:1}),bridgeX,.01,bridgeZ+14,-.5),'canal-water');
     markProp(addBox(8,.4,14,matTrunk,bridgeX,.25,bridgeZ,0),'bridge-deck');
     for(const side of[-1,1]){
@@ -165,6 +172,7 @@
       for(let i=0;i<4;i++)mkBox(rubble,.55+i*.08,.25+i*.04,.45,matRock,(i-1.5)*.42,.15,(i%2-.5)*.45,0,(i*.7)%2,0);
     }
     const [towerX,,towerZ]=layout.landmarks.watchTower;
+    buildPhaseSignal(handle,towerX-8,towerZ+5,2);
     for(const [dx,dz] of [[-2,-2],[2,-2],[-2,2],[2,2]])markProp(mkCyl(group,.18,.22,8,matTrunk,towerX+dx,4,towerZ+dz,0,0,0,6),'tower-leg');
     markProp(addBox(3.4,.3,3.4,matDark,towerX,8,towerZ,0),'tower-platform');markProp(addBox(4,.18,4,matRoof,towerX,8.4,towerZ,0),'tower-roof');
     handle.addCollider({type:'circle',x:towerX,z:towerZ,r:3,h:8.5});
@@ -177,12 +185,13 @@
     const [exitX,,exitZ]=layout.landmarks.exitGate;
     markProp(addBox(.4,3,.4,matTrunk,exitX-4,1.5,exitZ,0),'gate-post');markProp(addBox(.4,3,.4,matTrunk,exitX+4,1.5,exitZ,0),'gate-post');markProp(addBox(8.4,.22,.35,matTrunk,exitX,2.85,exitZ,0),'gate-beam');
     handle.addCollider({type:'circle',x:exitX-4,z:exitZ,r:.55,h:3});handle.addCollider({type:'circle',x:exitX+4,z:exitZ,r:.55,h:3});
-    const panic=(points,delay,speed=2.8)=>({waypoints:points.map(([x,z])=>({x,z})),startDelay:delay,speed,state:'run'});
+    // The ground crew rally beside the friendly tank instead of wandering through incoming fire.
+    const rally=(delay,speed,slot)=>({behavior:'follow-player',waypoints:[],startDelay:delay,speed,state:'run',followDistance:5.5,followSlot:slot});
     const actors=[
-      ['convoy-crew-a',fuelX+8,fuelZ+12,-.4,{},'aim',panic([[fuelX+15,fuelZ+17],[fuelX+20,fuelZ+11],[fuelX+12,fuelZ+8]],.25,3.1)],
-      ['convoy-crew-b',fuelX-13,fuelZ+16,.8,{},'idle',panic([[fuelX-19,fuelZ+20],[fuelX-25,fuelZ+15],[fuelX-18,fuelZ+10]],.8,2.9)],
-      ['depot-worker-a',fuelX-22,fuelZ-6,1.2,{coat:0x4f5247},'idle',panic([[fuelX-27,fuelZ-11],[fuelX-18,fuelZ-15],[fuelX-13,fuelZ-9]],1.35,2.7)],
-      ['depot-worker-b',fuelX+23,fuelZ+7,-1,{coat:0x4f5247},'repair',panic([[fuelX+29,fuelZ+13],[fuelX+34,fuelZ+7],[fuelX+28,fuelZ+1]],1.7,2.8)]
+      ['convoy-crew-a',fuelX+8,fuelZ+12,-.4,{},'aim',rally(.25,4.1,0)],
+      ['convoy-crew-b',fuelX-13,fuelZ+16,.8,{},'idle',rally(.8,3.9,1)],
+      ['depot-worker-a',fuelX-22,fuelZ-6,1.2,{coat:0x4f5247},'idle',rally(1.35,3.7,2)],
+      ['depot-worker-b',fuelX+23,fuelZ+7,-1,{coat:0x4f5247},'repair',rally(1.7,3.8,3)]
     ];
     for(const [role,x,z,yaw,colors,animationState,movement] of actors){buildStoryCharacter(group,role,x,z,yaw,animationState,movement);}
     const observer=buildStoryCharacter(group,'observer',towerX,towerZ,Math.PI,'aim');observer.position.y=8.35;
@@ -200,15 +209,21 @@
     if(active.replacesLegacy&&active.deps.setLegacyVisible)active.deps.setLegacyVisible(true);
     active=null;
   }
+  function setPhase(phase){
+    if(!active)return false;
+    active.phase=Math.max(0,Math.floor(+phase||0));
+    active.phaseSignals.forEach(entry=>{entry.signal.visible=entry.phase<=active.phase;});
+    return true;
+  }
   function loadForMission(mission){
     clearActive();
     const sceneId=mission&&(mission.sceneId||(mission.def&&mission.def.sceneId));
     const layout=sceneId&&SceneLibrary.getScene(sceneId);
     if(!layout)return null;
     const deps=configured||defaultDependencies();
-    const handle={id:layout.id,root:deps.createRoot(),colliders:[],deps,replacesLegacy:layout.id==='scene-01',addCollider(collider){this.colliders.push(collider);deps.addCollider(collider);}};
+    const handle={id:layout.id,root:deps.createRoot(),colliders:[],phaseSignals:[],deps,replacesLegacy:layout.id==='scene-01',addCollider(collider){this.colliders.push(collider);deps.addCollider(collider);}};
     if(handle.replacesLegacy&&deps.setLegacyVisible)deps.setLegacyVisible(false);
-    deps.addRoot(handle.root); deps.build(layout,handle); active=handle; return handle;
+    deps.addRoot(handle.root); deps.build(layout,handle); active=handle;setPhase(0); return handle;
   }
-  root.SceneBuilder=Object.freeze({configure,loadForMission,clearActive,getActive:()=>active,computeRailLayout});
+  root.SceneBuilder=Object.freeze({configure,loadForMission,clearActive,setPhase,getActive:()=>active,computeRailLayout});
 })(globalThis);

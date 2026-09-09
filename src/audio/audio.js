@@ -20,7 +20,7 @@ function startMusic(missionIndex=0){
   if(musicPlayer){musicPlayer.pause();musicPlayer.removeAttribute('src');}
   musicTrack=track;
   musicPlayer=new Audio(MUSIC_TRACKS[track]);
-  musicPlayer.loop=true; musicPlayer.preload='auto'; musicPlayer.volume=0.18;
+  musicPlayer.loop=true; musicPlayer.preload='auto'; musicPlayer.volume=.18*(typeof GameSettings!=='undefined'?GameSettings.get().volume:1);
   musicPlayer.play().catch(()=>{});
 }
 function syncMusicMute(){if(musicPlayer)musicPlayer.muted=muted;}
@@ -36,7 +36,7 @@ function initAudio(){
   if(actx){actx.resume&&actx.resume();return;}
   try{
     actx=new (window.AudioContext||window.webkitAudioContext)();
-    master=actx.createGain(); master.gain.value=0.5; master.connect(actx.destination);
+    master=actx.createGain(); master.gain.value=.5*(typeof GameSettings!=='undefined'?GameSettings.get().volume:1); master.connect(actx.destination);
     const len=actx.sampleRate*1.2;
     noiseB=actx.createBuffer(1,len,actx.sampleRate);
     const d=noiseB.getChannelData(0);

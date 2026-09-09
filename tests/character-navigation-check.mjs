@@ -60,7 +60,27 @@ navigation.update(.25);
 assert.ok(Math.hypot(alpha.position.x-before.x,alpha.position.z-before.z)<=.75+1e-9,
   'update steering must remain bounded by speed times delta time');
 
-const root={};alpha.parent=root;bravo.parent=root;
-assert.equal(navigation.removeWithin(root),2,'mission cleanup must unregister actors beneath its root');
+navigation.reset();actors.length=0;obstacles=[];
+const tank={pos:{x:0,y:0,z:0},yaw:0};
+let followThreats=[];
+navigation.configure({getObstacles:()=>obstacles,getThreats:()=>followThreats,getAllies:()=>actors,getPlayer:()=>tank});
+const follower={position:{x:0,y:0,z:16},rotation:{y:0},userData:{}};
+actors.push(follower);
+navigation.register(follower,{behavior:'follow-player',speed:4,radius:.4,followDistance:5});
+const gapBefore=Math.hypot(follower.position.x-tank.pos.x,follower.position.z-tank.pos.z);
+navigation.update(1);
+const gapAfter=Math.hypot(follower.position.x-tank.pos.x,follower.position.z-tank.pos.z);
+assert.ok(gapAfter<gapBefore,'a ground ally must close distance to its assigned position around the friendly tank');
+assert.ok(follower.position.z<16,'the formation target must be behind or beside the tank, not farther ahead');
+
+followThreats=[{position:{x:0,y:0,z:8}}];
+const threatGapBefore=Math.hypot(follower.position.x, follower.position.z-8);
+const followStep=navigation.chooseStep(follower,'follow-player',.5);
+assert.ok(followStep,'the follower must find a valid detour when its formation route is threatened');
+assert.ok(Math.hypot(followStep.x,followStep.z-8)>=threatGapBefore-1e-6,
+  'a friendly follower must not run closer to an enemy merely to reach the tank');
+
+const root={};follower.parent=root;
+assert.equal(navigation.removeWithin(root),1,'mission cleanup must unregister actors beneath its root');
 assert.equal(navigation.reset(),0,'reset after cleanup must report no remaining actors');
 console.log('character-navigation-check: PASS');

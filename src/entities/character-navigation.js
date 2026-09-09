@@ -2,12 +2,12 @@
   'use strict';
 
   var entries=[];
-  var dependencies={getObstacles:function(){return [];},getThreats:function(){return [];},getAllies:function(){return [];}};
+  var dependencies={getObstacles:function(){return [];},getThreats:function(){return [];},getAllies:function(){return [];},getPlayer:function(){return null;}};
   var nextIndex=0;
   var TAU=Math.PI*2;
 
   function finite(value,fallback){return typeof value==='number'&&isFinite(value)?value:fallback;}
-  function positionOf(value){return value&&(value.position||value)||null;}
+  function positionOf(value){return value&&(value.position||value.pos||value)||null;}
   function distance(a,b){var dx=a.x-b.x,dz=a.z-b.z;return Math.sqrt(dx*dx+dz*dz);}
   function wrap(angle){while(angle>Math.PI)angle-=TAU;while(angle<-Math.PI)angle+=TAU;return angle;}
   function contains(root,node){for(var current=node;current;current=current.parent)if(current===root)return true;return false;}
@@ -19,7 +19,8 @@
     dependencies={
       getObstacles:typeof next.getObstacles==='function'?next.getObstacles:function(){return [];},
       getThreats:typeof next.getThreats==='function'?next.getThreats:function(){return [];},
-      getAllies:typeof next.getAllies==='function'?next.getAllies:function(){return [];}
+      getAllies:typeof next.getAllies==='function'?next.getAllies:function(){return [];},
+      getPlayer:typeof next.getPlayer==='function'?next.getPlayer:function(){return null;}
     };
     return api;
   }
@@ -32,6 +33,8 @@
     entry.speed=Math.max(.1,finite(options.speed,2.8));
     entry.radius=Math.max(.1,finite(options.radius,.42));
     entry.behavior=options.behavior||entry.behavior||'hold';
+    entry.followDistance=Math.max(2,finite(options.followDistance,entry.followDistance||5.5));
+    entry.followSlot=Math.max(0,Math.floor(finite(options.followSlot,entry.index)));
     entry.delay=Math.max(0,finite(options.startDelay,0));
     entry.replan=0;
     actor.userData=actor.userData||{};
@@ -109,12 +112,26 @@
     return seen;
   }
 
+  function followTarget(entry){
+    var tank;
+    try{tank=dependencies.getPlayer();}catch(error){tank=null;}
+    var center=positionOf(tank);
+    if(!center)return null;
+    var slots=[[-1,-1],[1,-1],[-1.45,-.3],[1.45,-.3],[0,-1.55]];
+    var slot=slots[entry.followSlot%slots.length],yaw=finite(tank.yaw,tank.root&&tank.root.rotation?finite(tank.root.rotation.y,0):0);
+    var right=slot[0]*entry.followDistance,back=slot[1]*entry.followDistance;
+    return {x:center.x+Math.cos(yaw)*right+Math.sin(yaw)*back,z:center.z-Math.sin(yaw)*right+Math.cos(yaw)*back};
+  }
+
   function chooseStep(actor,behavior,dt){
     var entry=entryFor(actor)||register(actor,{behavior:behavior});
     behavior=behavior||entry.behavior||'hold';
     if(behavior==='hold')return null;
     var start=actor.position,horizon=Math.max(.8,Math.min(1.2,finite(dt,.8)));
     var stride=entry.speed*horizon,threats=threatPositions(entry),allies=separationPoints(actor);
+    var formation=behavior==='follow-player'?followTarget(entry):null;
+    if(behavior==='follow-player'&&!formation)return null;
+    if(formation&&distance(start,formation)<=1.15){entry.lastChoice=null;return null;}
     var currentYaw=actor.rotation?finite(actor.rotation.y,0):0;
     var best=null;
     for(var i=0;i<16;i++){
@@ -139,6 +156,7 @@
         if(gap<2.4)score-=(2.4-gap)*12;
       }
       if(!valid)continue;
+      if(formation)score-=distance(candidate,formation)*6;
       score+=Math.cos((i-entry.index*5)*TAU/16)*.001;
       if(!best||score>best.score)best={x:candidate.x,z:candidate.z,yaw:heading,state:behavior,score:score};
     }
@@ -155,7 +173,7 @@
   function setCommand(actor,command,target){
     var entry=entryFor(actor)||register(actor,{});
     entry.command=command||null;entry.target=target||null;
-    entry.behavior=command==='cover'?'run-to-cover':command==='retreat'?'run-to-cover':command==='attack'?'attack':entry.behavior;
+    entry.behavior=command==='cover'?'run-to-cover':command==='retreat'?'run-to-cover':command==='attack'?'attack':command==='rally'?'follow-player':entry.behavior;
     entry.replan=0;return actor;
   }
   function update(dt){
@@ -168,8 +186,12 @@
       var target=entry.lastChoice;
       if(!target||entry.replan<=0||segmentBlocked(actor.position,target,entry.radius)){
         var choice=chooseStep(actor,entry.behavior,dt);
-        if(!choice)return;
-        target=choice;entry.replan=.35+(entry.index%7)*.05;
+        if(!choice){
+          var idle=actor.userData&&actor.userData.animation;
+          if(entry.behavior==='follow-player'&&idle&&typeof idle.setState==='function')idle.setState('idle',.18);
+          return;
+        }
+        target=choice;entry.replan=(entry.behavior==='follow-player'?.12:.35)+(entry.index%7)*.05;
       }
       var dx=target.x-actor.position.x,dz=target.z-actor.position.z,length=Math.sqrt(dx*dx+dz*dz);
       if(length<1e-4){entry.lastChoice=null;return;}

@@ -25,7 +25,7 @@ const firePos=new Float32Array(FIRE_N*3),fireCol=new Float32Array(FIRE_N*3);
 const fireVel=new Float32Array(FIRE_N*3),fireLife=new Float32Array(FIRE_N);
 let fireCursor=0,fireGeo=null,firePoints=null;
 const staticObs=[],buildings=[],trees=[],farFires=[],clouds=[];
-const smokeSprites=[],flashes=[],craters=[],rings=[],debris=[],floats=[];
+const smokeSprites=[],flameSprites=[],flameLights=[],flashes=[],craters=[],rings=[],debris=[],floats=[];
 const bullets=[],enemies=[],wrecks=[],wreckObs=[],pendingFx=[],powerups=[];
 let craterCursor=0,shake=0,dmgAlpha=0,fovKick=0,timeScale=1;
 let player=null;
@@ -63,7 +63,8 @@ try{
       :c.type==='obb'
         ?{kind:'obb',center:{x:c.x,z:c.z},halfSize:{x:c.hw,z:c.hd},yaw:c.ry||0}
         :{kind:'circle',position:{x:c.x,z:c.z},radius:c.r||.5}),
-    getThreats:()=>enemies.filter(e=>!e.dead).map(e=>e.root.position)
+    getThreats:()=>enemies.filter(e=>!e.dead).map(e=>e.root.position),
+    getPlayer:()=>player
   });
   CharacterManager.configure({
     THREE,
@@ -112,7 +113,7 @@ try{
     setMusicDuck:value=>{if(musicPlayer)musicPlayer.volume=.18*value;},
     onComplete:()=>showMsg('فرماندهی تانک در اختیار شماست.',2200)
   });
-  TacticalCommand.configure({navigation:CharacterNavigation,onIssued:(command,count)=>showBanner('فرمان تاکتیکی',`${faNum(count)} نیرو فرمان ${command==='cover'?'پناه':command==='attack'?'حمله':'عقب‌نشینی'} را دریافت کردند.`)});
+  TacticalCommand.configure({navigation:CharacterNavigation,onIssued:(command,count)=>showBanner('فرمان تاکتیکی',`${faNum(count)} نیرو فرمان ${command==='cover'?'پناه':command==='attack'?'حمله':command==='rally'?'تجمع کنار تانک':'عقب‌نشینی'} را دریافت کردند.`)});
   if(!campaignUiReady)console.warn('بخشی از رابط کمپین آماده نیست.');
   showProfileSelect();
 

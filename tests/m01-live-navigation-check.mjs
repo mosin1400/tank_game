@@ -21,9 +21,10 @@ vm.runInContext(`${sceneSource};globalThis.SceneBuilderTest=SceneBuilder;`,conte
 const active=context.SceneBuilderTest.loadForMission({sceneId:'scene-01'});
 vm.runInContext(navigationSource,context);
 const obstacles=active.colliders.map(c=>c.type==='aabb'?{kind:'aabb',minX:c.x-c.hw,maxX:c.x+c.hw,minZ:c.z-c.hd,maxZ:c.z+c.hd}:c.type==='obb'?{kind:'obb',center:{x:c.x,z:c.z},halfSize:{x:c.hw,z:c.hd},yaw:c.ry||0}:{kind:'circle',position:{x:c.x,z:c.z},radius:c.r||.5});
-context.CharacterNavigation.configure({getObstacles:()=>obstacles,getThreats:()=>[]});
+const tank={pos:{x:-68,y:0,z:78},yaw:0};
+context.CharacterNavigation.configure({getObstacles:()=>obstacles,getThreats:()=>[],getPlayer:()=>tank});
 const runners=actors.filter(actor=>actor.userData.spawnOptions.movement);
-for(const actor of runners){actor.userData.animation={setState(state){actor.userData.state=state;}};const move=actor.userData.spawnOptions.movement;context.CharacterNavigation.register(actor,{behavior:'run-to-cover',speed:move.speed,startDelay:0});}
+for(const actor of runners){actor.userData.animation={setState(state){actor.userData.state=state;}};const move=actor.userData.spawnOptions.movement;context.CharacterNavigation.register(actor,{behavior:move.behavior||'run-to-cover',speed:move.speed,startDelay:0,followDistance:move.followDistance,followSlot:move.followSlot});}
 const before=runners.map(actor=>({x:actor.position.x,z:actor.position.z}));
 context.CharacterNavigation.update(.5);
 for(let i=0;i<runners.length;i++){

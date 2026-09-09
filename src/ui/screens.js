@@ -91,6 +91,7 @@ function startMission(i){
   score=0; kills=0; comboN=0; comboT=0;
   buffRapid=0; buffPower=0; puSpawnT=12;
   timeScale=1; shake=0; fovKick=0; dmgAlpha=0;
+  smokeScreenCooldown=0;
   for(const k in hudCache)delete hudCache[k];
   feedEl.innerHTML='';
   aimPoint.set(0,0,40);
@@ -137,11 +138,13 @@ function animate(){
   requestAnimationFrame(animate);
   try{
     const dt=Math.min(clock.getDelta(),0.05);
+    if(typeof GameSettings!=='undefined')GameSettings.sampleFrame(dt);
     const t=clock.elapsedTime;
     if(!paused){
       timeScale+=(1-timeScale)*(1-Math.exp(-2.2*dt));
       const wdt=dt*timeScale;
       if(state==='play'){
+        smokeScreenCooldown=Math.max(0,smokeScreenCooldown-wdt);
         comboT=Math.max(0,comboT-wdt);
         if(comboT<=0)comboN=0;
         updatePlayer(wdt); updateEnemies(wdt,t); updateBullets(wdt);

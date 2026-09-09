@@ -6,21 +6,24 @@ const context=vm.createContext({console,curMission:{def:{operation:'opening-conv
 for(const path of ['src/scenes/scene-01.js','src/scenes/scene-library.js','src/missions/operation-controller.js']){
   vm.runInContext(await fs.readFile(new URL(path,root),'utf8'),context,{filename:path});
 }
-let spawns=0,victories=0;
+let spawns=0,victories=0;const phases=[];const radio=[];
 const trucks=[{alive:true,reachedExit:false},{alive:true,reachedExit:false},{alive:true,reachedExit:false}];
 const operation=context.OpeningOperation;
 operation.configure({
   createConvoy:()=>trucks,updateConvoy:()=>{},spawnEncounter:()=>{spawns++;},
-  encounterAlive:()=>false,showObjective:()=>{},missionVictory:()=>{victories++;}
+  encounterAlive:()=>false,showObjective:()=>{},showMessage:text=>radio.push(text),setScenePhase:phase=>phases.push(phase),missionVictory:()=>{victories++;}
 });
 operation.start({idx:0,def:{sceneId:'scene-01'}});
+if(phases.join(',')!=='0'||radio.length<1)throw new Error('opening must light its first story phase and give a military radio cue');
 if(operation.snapshot().act!=='yard'||spawns!==0)throw new Error('opening must begin with a story beat, not instant enemies');
 operation.update(8);
 if(spawns!==2)throw new Error('yard encounter must begin after the opening beat');
 operation.update(.1);
 if(operation.snapshot().act!=='broken-road'||spawns!==4)throw new Error('road must follow a cleared yard');
+if(phases.join(',')!=='0,1')throw new Error('clearing the yard must ignite the broken-road scene phase');
 operation.update(.1);
 if(operation.snapshot().act!=='watch-hill'||spawns!==5)throw new Error('hill must follow a cleared road');
+if(phases.join(',')!=='0,1,2')throw new Error('clearing the road must ignite the watch-hill scene phase');
 trucks.forEach(truck=>truck.alive=false);
 if(!operation.update(.1).failed)throw new Error('all trucks lost must fail');
 operation.dispose(); trucks.forEach(truck=>{truck.alive=true;truck.reachedExit=false;}); spawns=0;

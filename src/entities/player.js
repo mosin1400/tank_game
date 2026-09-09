@@ -2,11 +2,13 @@
 function updatePlayer(dt){
   if(player.dead||cinematicControlsLocked)return;
   let thr=0,turn=0;
-  if(keys.KeyW||keys.ArrowUp)thr=1;
-  if(keys.KeyS||keys.ArrowDown)thr=-1;
-  if(keys.KeyA||keys.ArrowLeft)turn+=1;
-  if(keys.KeyD||keys.ArrowRight)turn-=1;
+  // Tank driving stays on WASD. Arrow keys are reserved for Shift precision aiming.
+  if(keys.KeyW)thr=1;
+  if(keys.KeyS)thr=-1;
+  if(keys.KeyA)turn+=1;
+  if(keys.KeyD)turn-=1;
   if(stickMove.id!==null){thr=-stickMove.vy;turn=-stickMove.vx*1.2;}
+  if(keys.ControlLeft||keys.ControlRight){thr*=.35;turn*=.38;}
   if(typeof TankAiming!=='undefined'){
     const aimingInput={
       shift:!!(keys.ShiftLeft||keys.ShiftRight),up:!!keys.ArrowUp,down:!!keys.ArrowDown,

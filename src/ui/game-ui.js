@@ -20,6 +20,23 @@ function updateFX(dt,t){
     sm.s.scale.x+=sm.grow*dt; sm.s.scale.y+=sm.grow*dt;
     sm.s.material.opacity=sm.base*Math.sin(Math.PI*clamp(sm.life/sm.max,0,1));
   }
+  for(const flame of flameSprites){
+    if(flame.life<=0)continue;
+    flame.life-=dt;
+    if(flame.life<=0){flame.s.visible=false;continue;}
+    const age=1-flame.life/flame.max,flicker=.82+Math.sin(t*19+flame.seed)*.18;
+    flame.s.position.y+=dt*(.75+flame.base*.55);
+    flame.s.scale.set(flame.base*(.7+age*.8)*flicker,flame.base*(1.25+age*1.9)*flicker,1);
+    flame.s.material.opacity=Math.sin(Math.PI*Math.min(1,flame.life/flame.max))*.92;
+    flame.s.material.color.setHSL(.055+age*.02,1,.52-age*.14);
+  }
+  for(const lamp of flameLights){
+    if(lamp.life<=0)continue;
+    lamp.life-=dt;
+    if(lamp.life<=0){lamp.light.intensity=0;continue;}
+    if(lamp.anchor)lamp.light.position.copy(lamp.anchor.position);
+    lamp.light.intensity=5.5*lamp.flicker*(.72+Math.sin(t*23+lamp.flicker)*.28)*Math.min(1,lamp.life/.18);
+  }
   for(const f of flashes){
     if(f.life<=0)continue;
     f.life-=dt; f.s.material.opacity=clamp(f.life/0.16,0,1);
@@ -113,7 +130,7 @@ function updatePowerups(dt){
 }
 let _lastT=performance.now();
 const clock={elapsedTime:0,getDelta(){const n=performance.now(),d=(n-_lastT)/1000;_lastT=n;this.elapsedTime=n/1000;return d;}};
-let menuAng=0;
+let menuAng=0,cameraMode=0,freeLookYaw=0;
 const camLook=vecShim(0,0,0),camIdeal=vecShim(0,0,0);
 function updateCamera(dt){
   shake=Math.max(0,shake-dt*2.6);
@@ -131,14 +148,16 @@ function updateCamera(dt){
   }else{
     const precision=typeof TankAiming!=='undefined'&&(keys.ShiftLeft||keys.ShiftRight);
     precisionPose=precision?TankAiming.cameraPose():null;
-    const fwd=new THREE.Vector3(Math.sin(player.yaw),0,Math.cos(player.yaw));
+    if(!(keys.AltLeft||keys.AltRight))freeLookYaw*=Math.exp(-5*dt);
+    const fwd=new THREE.Vector3(Math.sin(player.yaw+freeLookYaw),0,Math.cos(player.yaw+freeLookYaw));
     if(precisionPose)camera.position.copy(precisionPose.position);
     else{
-      camIdeal.copy(player.pos).addScaledVector(fwd,-9.5); camIdeal.y=5.6;
+      const distance=cameraMode===1?6.3:cameraMode===2?13.5:9.5,height=cameraMode===1?3.6:cameraMode===2?9.2:5.6;
+      camIdeal.copy(player.pos).addScaledVector(fwd,-distance); camIdeal.y=height;
       camera.position.lerp(camIdeal,1-Math.exp(-5*dt));
     }
     if(shake>0){
-      const shakeScale=precisionPose?precisionPose.shakeScale:1;
+      const shakeScale=(precisionPose?precisionPose.shakeScale:1)*(typeof GameSettings!=='undefined'?GameSettings.get().shake:1);
       camera.position.x+=rand(-1,1)*shake*0.35*shakeScale;
       camera.position.y+=rand(-1,1)*shake*0.28*shakeScale;
       camera.rotation.z=rand(-1,1)*shake*0.02*shakeScale;
@@ -146,11 +165,12 @@ function updateCamera(dt){
       camera.rotation.z*=0.9;
     }
     if(precisionPose)camera.lookAt(precisionPose.lookAt);
-    else{camLook.copy(player.pos).addScaledVector(fwd,6); camLook.y=1.7;camera.lookAt(camLook);}
+    else{camLook.copy(player.pos).addScaledVector(fwd,cameraMode===2?10:6); camLook.y=cameraMode===2?2.8:1.7;camera.lookAt(camLook);}
     sun.position.copy(player.pos).add(new THREE.Vector3(38,52,22));
     sun.target.position.copy(player.pos);
   }
-  const targetFov=(precisionPose?precisionPose.fov:46)+fovKick*(precisionPose?precisionPose.shakeScale:1);
+  const baseFov=typeof GameSettings!=='undefined'?GameSettings.get().fov:46;
+  const targetFov=(precisionPose?precisionPose.fov:baseFov)+fovKick*(precisionPose?precisionPose.shakeScale:1);
   if(Math.abs(camera.fov-targetFov)>0.01){
     camera.fov=targetFov; camera.updateProjectionMatrix();
   }

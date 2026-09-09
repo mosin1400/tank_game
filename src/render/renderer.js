@@ -45,6 +45,7 @@ function initCore(){
   sun.shadow.bias=-0.0004; sun.shadow.normalBias=0.03;
   scene.add(sun,sun.target);
   maxAniso=Math.min(renderer.capabilities.getMaxAnisotropy(),isCoarse?4:8);
+  if(typeof GameSettings!=='undefined')GameSettings.apply();
 }
 
 /* ================= بافت‌ها و متریال‌ها ================= */

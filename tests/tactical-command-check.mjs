@@ -8,6 +8,7 @@ const sandbox={globalThis:null};sandbox.globalThis=sandbox;
 vm.runInNewContext(source,sandbox,{filename:'src/entities/tactical-command.js'});
 const commands=sandbox.TacticalCommand;
 assert.ok(commands,'TacticalCommand export missing');
+assert.equal(commands.supports('rally'),true,'tactical command must support rallying allies back to the tank');
 
 const calls=[];
 const navigation={

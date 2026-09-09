@@ -69,7 +69,7 @@
   }
   var BUILD_VERSION='20260828-combat-v3';
   var GAME_SCRIPTS=[
-    'src/core/runtime.js','src/assets/character-roster.js','src/entities/animation-manager.js','src/entities/weapon-models.js','src/entities/character-combat.js','src/entities/character-navigation.js','src/entities/tactical-command.js','src/entities/character-manager.js','src/entities/tank-aiming.js','src/render/renderer.js','src/scenes/scene-01.js','src/scenes/scene-library.js','src/scenes/scene-builder.js','src/world/battlefield.js',
+    'src/core/runtime.js','src/ui/settings.js','src/assets/character-roster.js','src/entities/animation-manager.js','src/entities/weapon-models.js','src/entities/character-combat.js','src/entities/character-navigation.js','src/entities/tactical-command.js','src/entities/character-manager.js','src/entities/tank-aiming.js','src/render/renderer.js','src/scenes/scene-01.js','src/scenes/scene-library.js','src/scenes/scene-builder.js','src/world/battlefield.js',
     'src/combat/effects.js','src/audio/audio.js','src/missions/definitions.js',
     'src/campaign/mission-data.js','src/campaign/campaign-state.js',
     'src/profile/profile-view-model.js','src/profile/profile-store.js','src/profile/profile-ui.js',

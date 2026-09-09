@@ -40,6 +40,7 @@ const context=vm.createContext({
 vm.runInContext(`${source};globalThis.SceneBuilderTest=SceneBuilder;`,context);
 const active=context.SceneBuilderTest.loadForMission({sceneId:'scene-01'});
 if(!active)throw new Error('M01 scene did not build');
+if(typeof context.SceneBuilderTest.setPhase!=='function')throw new Error('M01 needs phase-controlled visual escalation');
 const all=[];
 (function walk(node){all.push(node);for(const child of node.children||[])walk(child);})(active.root);
 const actors=all.filter(node=>node.userData&&node.userData.actorRole);

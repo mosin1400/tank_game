@@ -1,13 +1,19 @@
 /* ================= گلوله‌ها و آیتم‌ها ================= */
 function initBullets(){
-  const bulletGeo=new THREE.CylinderGeometry(0.05,0.05,0.6,8); bulletGeo.rotateX(Math.PI/2);
+  const bulletGeo=new THREE.CylinderGeometry(0.055,0.075,0.72,10); bulletGeo.rotateX(Math.PI/2);
+  const coreGeo=new THREE.SphereGeometry(.085,10,8);
+  const tailGeo=new THREE.ConeGeometry(.12,.46,8); tailGeo.rotateX(-Math.PI/2);
   for(let i=0;i<70;i++){
-    const m=new THREE.Mesh(bulletGeo,matShellP); m.visible=false; scene.add(m);
+    const m=new THREE.Group(); m.visible=false; scene.add(m);
+    const shellBody=new THREE.Mesh(bulletGeo,matShellP); shellBody.name='shellBody';m.add(shellBody);
+    const shellCore=new THREE.Mesh(coreGeo,matShellP); shellCore.name='shellCore';shellCore.position.z=.36;m.add(shellCore);
+    const tracerTail=new THREE.Mesh(tailGeo,matShellP); tracerTail.name='tracerTail';tracerTail.position.z=-.5;m.add(tracerTail);
     const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:texGlow,blending:THREE.AdditiveBlending,
       depthWrite:false,transparent:true,opacity:0.9}));
     glow.scale.set(0.9,0.9,1); m.add(glow);
+    const light=new THREE.PointLight(0xffbd65,0,4,2);light.position.z=.12;m.add(light);
     bullets.push({mesh:m,vel:new THREE.Vector3(),life:0,owner:'',kind:'shell',dmg:0,
-      splash:0,expl:0.7,gravity:0,trailT:0,active:false});
+      splash:0,expl:0.7,gravity:0,trailT:0,active:false,body:shellBody,core:shellCore,tail:tracerTail,glow,light});
   }
 }
 function spawnBullet(pos,dir,speed,owner,dmg,kind,opts={}){
@@ -17,8 +23,12 @@ function spawnBullet(pos,dir,speed,owner,dmg,kind,opts={}){
   b.splash=opts.splash||0; b.expl=opts.expl||0.7; b.gravity=opts.gravity||0; b.trailT=0;
   b.mesh.visible=true; b.mesh.position.copy(pos); b.srcPos=pos.clone();
   b.vel.copy(dir).multiplyScalar(speed);
-  b.mesh.material=kind==='mg'?matMG:(kind==='rocket'?matRocket:(owner==='player'?matShellP:matShellE));
+  const material=kind==='mg'?matMG:(kind==='rocket'?matRocket:(owner==='player'?matShellP:matShellE));
+  b.body.material=material;b.core.material=material;b.tail.material=material;
   b.mesh.scale.setScalar(kind==='mg'?0.5:(kind==='rocket'?1.1:1));
+  b.tail.visible=kind!=='mg';b.core.visible=kind!=='mg';
+  b.glow.material.color.set(kind==='mg'?0xffdd88:(kind==='rocket'?0xff8b44:owner==='player'?0xffd27c:0xff6a4a));
+  b.light.color.copy(b.glow.material.color);b.light.intensity=kind==='mg'?0:2.4;
   b.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),dir);
 }
 const PU={

@@ -102,11 +102,14 @@
     var group=new deps.THREE.Group();
     position=position||{};group.position.set(position.x||0,position.y||0,position.z||0);
     group.rotation.y=options.yaw||0;group.userData.characterRole=id;
-    if(options.movement&&Array.isArray(options.movement.waypoints)&&options.movement.waypoints.length){
+    var movement=options.movement;
+    if(movement&&((Array.isArray(movement.waypoints)&&movement.waypoints.length)||movement.behavior==='follow-player')){
       group.userData.movement={
-        waypoints:options.movement.waypoints.map(function(point){return {x:+point.x||0,z:+point.z||0};}),
-        speed:Math.max(.1,+options.movement.speed||2.5),state:options.movement.state||'run',
-        delay:Math.max(0,+options.movement.startDelay||0),index:0,loop:options.movement.loop!==false
+        waypoints:(movement.waypoints||[]).map(function(point){return {x:+point.x||0,z:+point.z||0};}),
+        speed:Math.max(.1,+movement.speed||2.5),state:movement.state||'run',
+        delay:Math.max(0,+movement.startDelay||0),index:0,loop:movement.loop!==false,
+        behavior:movement.behavior||null,followDistance:Math.max(2,+movement.followDistance||5.5),
+        followSlot:Math.max(0,Math.floor(+movement.followSlot||0))
       };
     }
     if(options.parent)options.parent.add(group);
@@ -128,8 +131,9 @@
         group.userData.weapon=weapon;
         if(global.CharacterCombat)global.CharacterCombat.register(group,{faction:entry.faction==='ash'?'enemy':'allied'});
         if(global.TacticalCommand)global.TacticalCommand.register(group,{allied:entry.faction!=='ash'});
-        if(global.CharacterNavigation&&options.movement){
-          global.CharacterNavigation.register(group,{behavior:'run-to-cover',speed:options.movement.speed,startDelay:options.movement.startDelay});
+        if(global.CharacterNavigation&&group.userData.movement){
+          var navigationMovement=group.userData.movement;
+          global.CharacterNavigation.register(group,{behavior:navigationMovement.behavior==='follow-player'?'follow-player':'run-to-cover',speed:navigationMovement.speed,startDelay:navigationMovement.delay,followDistance:navigationMovement.followDistance,followSlot:navigationMovement.followSlot});
           group.userData.smartNavigation=true;
         }
         instances.push(group);return group;

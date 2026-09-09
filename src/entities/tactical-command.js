@@ -3,7 +3,7 @@
 
   var actors=[];
   var dependencies={navigation:null,onIssued:null};
-  var supported={cover:true,attack:true,retreat:true};
+  var supported={cover:true,attack:true,retreat:true,rally:true};
 
   function configure(options){
     options=options||{};
@@ -68,6 +68,6 @@
     return count;
   }
 
-  var api={configure:configure,register:register,unregister:unregister,issue:issue,reset:reset};
+  var api={configure:configure,register:register,unregister:unregister,issue:issue,reset:reset,supports:function(command){return !!supported[command];}};
   global.TacticalCommand=Object.freeze(api);
 })(globalThis);
