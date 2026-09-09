@@ -73,6 +73,18 @@ function replaceProfile(slot,name){
   if(!Number.isInteger(slot)||slot<0||slot>2)return null;
   profileSlots[slot]=createProfile(name); writeProfileSlots(profileSlots); return loadProfile(slot);
 }
+function renameProfile(slot,name){
+  if(!Number.isInteger(slot)||slot<0||slot>2||!profileSlots[slot])return null;
+  profileSlots[slot].name=ProfileViewModel.normalizeProfileName(name);
+  if(activeProfileSlot===slot)activeProfile=profileSlots[slot];
+  writeProfileSlots(profileSlots); return profileSlots[slot];
+}
+function deleteProfile(slot){
+  if(!Number.isInteger(slot)||slot<0||slot>2||!profileSlots[slot])return false;
+  profileSlots[slot]=null;
+  if(activeProfileSlot===slot){activeProfile=null;activeProfileSlot=-1;}
+  writeProfileSlots(profileSlots); return true;
+}
 function resetActiveProgress(){
   if(!activeProfile)return;
   const clean=createProfile(activeProfile.name); profileSlots[activeProfileSlot]=clean;

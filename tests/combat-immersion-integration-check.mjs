@@ -6,6 +6,8 @@ const order=['destructible-registry.js','combat-awareness.js','tank-damage.js','
 for(let i=1;i<order.length;i++)assert.ok(boot.indexOf(order[i-1])<boot.indexOf(order[i]),`${order[i-1]} must load before ${order[i]}`);
 for(const module of ['weapon-models.js','character-combat.js','character-navigation.js','tactical-command.js'])assert.ok(boot.indexOf(module)<boot.indexOf('character-manager.js'),`${module} must load before character-manager`);
 assert.ok(boot.indexOf('tank-aiming.js')<boot.indexOf('player.js'));
-assert.match(boot,/20260828-combat-v3/);assert.match(html,/20260828-combat-v3/);
+const buildVersion=boot.match(/var BUILD_VERSION='([^']+)'/);
+assert.ok(buildVersion,'boot must declare one cache version');
+assert.match(html,new RegExp(`boot\\.js\\?v=${buildVersion[1]}`),'HTML and boot must use the same cache version');
 assert.doesNotMatch(boot,/character-v11|mixamo-v2/);assert.doesNotMatch(html,/character-v11|mixamo-v2/);
 console.log('combat-immersion-integration-check: PASS');

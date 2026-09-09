@@ -10,6 +10,7 @@ function showMainMenu(){
   state='menu'; paused=false; document.body.dataset.state='menu';
   stopMusic(); document.body.classList.remove('paused');
   showScreen('mainMenu');
+  if(typeof selectMenuProfile==='function')selectMenuProfile(activeProfileSlot>=0?activeProfileSlot:0);
 }
 function totalStars(){
   let n=0; for(let i=0;i<MISSIONS.length;i++)n+=prog.s[i]||0; return n;

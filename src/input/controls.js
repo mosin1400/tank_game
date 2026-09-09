@@ -120,9 +120,11 @@ function initDom(){
   document.getElementById('btnSettings').addEventListener('click',()=>GameSettings.toggle());
   GameSettings.init();
   const mainEnter=document.getElementById('btnMainEnter');
-  if(mainEnter)mainEnter.addEventListener('click',showProfileSelect);
+  if(mainEnter)mainEnter.addEventListener('click',continueMenuProfile);
   const mainSettings=document.getElementById('btnMainSettings');
   if(mainSettings)mainSettings.addEventListener('click',()=>GameSettings.toggle());
+  const menuCreate=document.getElementById('btnMenuProfileCreate'); if(menuCreate)menuCreate.addEventListener('click',createMenuProfile);
+  const menuRename=document.getElementById('btnMenuProfileRename'); if(menuRename)menuRename.addEventListener('click',renameMenuProfile);
 
   addEventListener('resize',()=>{
     camera.aspect=innerWidth/innerHeight;

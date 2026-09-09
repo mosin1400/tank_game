@@ -28,7 +28,7 @@
   "three/addons/": "./vendor/three/examples/jsm/"
 }}
 </script>
-<link rel="stylesheet" href="styles/game.css?v=20260909-epic-intro-v1">
+<link rel="stylesheet" href="styles/game.css?v=20260909-menu-profiles-v1">
 <link rel="stylesheet" href="styles/profile.css">
 <link rel="stylesheet" href="styles/campaign-map.css">
 </head>
@@ -108,6 +108,15 @@
     <button id="btnMainSettings" class="main-menu-settings">تنظیمات <span>⚙</span></button>
     <p class="main-menu-note">فرماندهی تی-۳۴/۸۵ · ۴۰ مأموریت</p>
   </section>
+  <aside id="menuProfilePanel" aria-label="پروفایل‌های فرماندهی">
+    <div class="menu-profile-head"><span>پروفایل فرمانده</span><small>ذخیرهٔ محلی</small></div>
+    <div id="menuProfileSlots" aria-label="پروفایل‌ها"></div>
+    <input id="menuProfileName" type="text" maxlength="20" autocomplete="off" placeholder="نام فرمانده">
+    <div class="menu-profile-actions">
+      <button id="btnMenuProfileCreate" type="button">+ ایجاد پروفایل</button>
+      <button id="btnMenuProfileRename" type="button">تغییر نام</button>
+    </div>
+  </aside>
 </div>
 
 <div id="profileSelect" class="overlay">
@@ -218,7 +227,7 @@
 <div id="errToast"></div>
 
 <!-- ══════════ اسکریپت راه‌انداز: تشخیص خطا + انتخاب سرور + تزریق importmap ══════════ -->
-<script src="src/boot.js?v=20260909-epic-intro-v1" defer></script>
+<script src="src/boot.js?v=20260909-menu-profiles-v1" defer></script>
 
 <!-- ══════════ کد بازی (بعد از آماده شدن importmap اجرا می‌شود) ══════════ -->
 
