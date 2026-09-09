@@ -124,7 +124,7 @@ function initDom(){
   const mainSettings=document.getElementById('btnMainSettings');
   if(mainSettings)mainSettings.addEventListener('click',()=>GameSettings.toggle());
   const menuCreate=document.getElementById('btnMenuProfileCreate'); if(menuCreate)menuCreate.addEventListener('click',createMenuProfile);
-  const menuRename=document.getElementById('btnMenuProfileRename'); if(menuRename)menuRename.addEventListener('click',renameMenuProfile);
+  const menuProfileToggle=document.getElementById('btnProfileToggle'); if(menuProfileToggle)menuProfileToggle.addEventListener('click',toggleMenuProfiles);
 
   addEventListener('resize',()=>{
     camera.aspect=innerWidth/innerHeight;

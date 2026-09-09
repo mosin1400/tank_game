@@ -22,7 +22,7 @@ function renderProfileSlots(){
   });
 }
 function selectProfileSlot(slot){
-  if(!Number.isInteger(slot)||slot<0||slot>2)return;
+  if(!Number.isInteger(slot)||slot<0||slot>=listProfiles().length)return;
   selectedProfileSlot=slot; pendingReplacementSlot=-1;
   const profile=listProfiles()[slot];
   if(profile)loadProfile(slot);
@@ -62,47 +62,50 @@ function renderMenuProfileSlots(){
   host.innerHTML='';
   listProfiles().forEach((profile,slot)=>{
     const row=document.createElement('div'); row.className='menu-profile-slot'+(slot===selectedProfileSlot?' selected':'');
-    if(!profile){
-      row.classList.add('empty'); row.innerHTML=`<div class="menu-profile-empty">جایگاه ${faNum(slot+1)} · خالی <span>+</span></div>`;
-      row.addEventListener('click',()=>selectMenuProfile(slot));
-    }else{
-      const pick=document.createElement('button'); pick.type='button'; pick.className='menu-profile-pick';
-      const view=ProfileViewModel.buildProfileSlotView(profile,slot,CAMPAIGN_MISSIONS.length);
-      pick.innerHTML=`<b>${view.name}</b><small>پیشروی ${faNum(view.progress)}٪ · ${faNum(view.stars)} ستاره</small>`;
-      pick.addEventListener('click',()=>selectMenuProfile(slot));
-      const remove=document.createElement('button'); remove.type='button'; remove.className='menu-profile-delete'; remove.title='حذف پروفایل'; remove.textContent='×';
-      remove.addEventListener('click',event=>{event.stopPropagation();deleteMenuProfile(slot);});
-      row.append(pick,remove);
-    }
+    const pick=document.createElement('button'); pick.type='button'; pick.className='menu-profile-pick';
+    const view=ProfileViewModel.buildProfileSlotView(profile,slot,CAMPAIGN_MISSIONS.length);
+    pick.innerHTML=`<b>${view.name}</b><small>پیشروی ${faNum(view.progress)}٪ · ${faNum(view.stars)} ستاره</small>`;
+    pick.addEventListener('click',()=>selectMenuProfile(slot));
+    pick.addEventListener('dblclick',event=>{event.preventDefault();editMenuProfileName(slot,row);});
+    const remove=document.createElement('button'); remove.type='button'; remove.className='menu-profile-delete'; remove.title='حذف پروفایل'; remove.textContent='×';
+    remove.disabled=listProfiles().length<=1;
+    remove.addEventListener('click',event=>{event.stopPropagation();deleteMenuProfile(slot);});
+    row.append(pick,remove);
     host.appendChild(row);
   });
 }
 function selectMenuProfile(slot){
-  if(!Number.isInteger(slot)||slot<0||slot>2)return;
+  if(!Number.isInteger(slot)||slot<0||slot>=listProfiles().length)return;
   selectedProfileSlot=slot;
-  const profile=listProfiles()[slot];
-  const input=document.getElementById('menuProfileName'); if(input)input.value=profile?profile.name:'';
   renderMenuProfileSlots();
 }
 function createMenuProfile(){
-  const slot=listProfiles().findIndex(profile=>!profile);
-  if(slot<0){showMsg('هر سه جایگاه پروفایل پر است؛ یکی را حذف کنید.',2600);return;}
-  const input=document.getElementById('menuProfileName');
-  replaceProfile(slot,ProfileViewModel.normalizeProfileName(input&&input.value));
-  selectMenuProfile(slot);
+  appendProfile('فرمانده');
+  selectedProfileSlot=listProfiles().length-1;
+  renderMenuProfileSlots();
+  const row=document.querySelectorAll('#menuProfileSlots .menu-profile-slot')[selectedProfileSlot];
+  if(row)editMenuProfileName(selectedProfileSlot,row);
 }
-function renameMenuProfile(){
-  if(!listProfiles()[selectedProfileSlot]){showMsg('ابتدا یک پروفایل بسازید.',2200);return;}
-  const input=document.getElementById('menuProfileName');
-  renameProfile(selectedProfileSlot,ProfileViewModel.normalizeProfileName(input&&input.value));
-  selectMenuProfile(selectedProfileSlot);
+function editMenuProfileName(slot,row){
+  const profile=listProfiles()[slot]; if(!profile)return;
+  row.innerHTML='';
+  const input=document.createElement('input'); input.className='menu-profile-inline-name'; input.maxLength=20; input.value=profile.name;
+  const commit=()=>{renameProfile(slot,ProfileViewModel.normalizeProfileName(input.value));selectedProfileSlot=slot;renderMenuProfileSlots();};
+  input.addEventListener('keydown',event=>{if(event.key==='Enter')commit();if(event.key==='Escape')renderMenuProfileSlots();});
+  input.addEventListener('blur',commit,{once:true}); row.appendChild(input); input.focus(); input.select();
 }
 function deleteMenuProfile(slot){
   const profile=listProfiles()[slot]; if(!profile)return;
+  if(listProfiles().length<=1){showMsg('حداقل یک پروفایل باید باقی بماند.',2200);return;}
   if(!confirm(`پروفایل «${profile.name}» و پیشرفت آن حذف شود؟`))return;
   deleteProfile(slot);
-  const next=listProfiles().findIndex(Boolean);
-  selectMenuProfile(next>=0?next:0);
+  selectMenuProfile(Math.min(slot,listProfiles().length-1));
+}
+function toggleMenuProfiles(){
+  const panel=document.getElementById('menuProfilePanel'); if(!panel)return;
+  const open=!panel.classList.contains('open'); panel.classList.toggle('open',open);
+  const toggle=document.getElementById('btnProfileToggle'); if(toggle)toggle.setAttribute('aria-expanded',String(open));
+  if(open)selectMenuProfile(Math.min(Math.max(0,selectedProfileSlot),listProfiles().length-1));
 }
 function continueMenuProfile(){
   if(!loadProfile(selectedProfileSlot)){showMsg('یک پروفایل بسازید یا انتخاب کنید.',2200);return;}

@@ -18,9 +18,9 @@ function normalizeProfile(profile){
 function readProfileSlots(){
   try{
     const stored=JSON.parse(localStorage.getItem(PROFILE_STORAGE_KEY)||'null');
-    if(Array.isArray(stored)&&stored.length===3)return stored.map(p=>p?normalizeProfile(p):null);
+    if(Array.isArray(stored))return stored.filter(Boolean).map(normalizeProfile);
   }catch(e){}
-  return [null,null,null];
+  return [];
 }
 function writeProfileSlots(slots){
   try{localStorage.setItem(PROFILE_STORAGE_KEY,JSON.stringify(slots));}catch(e){}
@@ -41,7 +41,7 @@ function migrateLegacyProgress(){
 }
 let profileSlots=readProfileSlots();
 if(!profileSlots.some(Boolean)){
-  profileSlots[0]=migrateLegacyProgress()||createProfile('فرمانده');
+  profileSlots=[migrateLegacyProgress()||createProfile('فرمانده')];
   writeProfileSlots(profileSlots);
 }
 function listProfiles(){return profileSlots.slice();}
@@ -54,7 +54,7 @@ function syncLegacyProgress(){
   });
 }
 function loadProfile(slot){
-  if(!Number.isInteger(slot)||slot<0||slot>2||!profileSlots[slot])return null;
+  if(!Number.isInteger(slot)||slot<0||slot>=profileSlots.length||!profileSlots[slot])return null;
   activeProfile=normalizeProfile(profileSlots[slot]); activeProfileSlot=slot;
   profileSlots[slot]=activeProfile; syncLegacyProgress(); return activeProfile;
 }
@@ -70,19 +70,24 @@ function saveActiveProfile(){
   profileSlots[activeProfileSlot]=activeProfile; writeProfileSlots(profileSlots);
 }
 function replaceProfile(slot,name){
-  if(!Number.isInteger(slot)||slot<0||slot>2)return null;
+  if(!Number.isInteger(slot)||slot<0||slot>=profileSlots.length)return null;
   profileSlots[slot]=createProfile(name); writeProfileSlots(profileSlots); return loadProfile(slot);
 }
+function appendProfile(name){
+  profileSlots.push(createProfile(name)); writeProfileSlots(profileSlots);
+  return loadProfile(profileSlots.length-1);
+}
 function renameProfile(slot,name){
-  if(!Number.isInteger(slot)||slot<0||slot>2||!profileSlots[slot])return null;
+  if(!Number.isInteger(slot)||slot<0||slot>=profileSlots.length||!profileSlots[slot])return null;
   profileSlots[slot].name=ProfileViewModel.normalizeProfileName(name);
   if(activeProfileSlot===slot)activeProfile=profileSlots[slot];
   writeProfileSlots(profileSlots); return profileSlots[slot];
 }
 function deleteProfile(slot){
-  if(!Number.isInteger(slot)||slot<0||slot>2||!profileSlots[slot])return false;
-  profileSlots[slot]=null;
+  if(!Number.isInteger(slot)||slot<0||slot>=profileSlots.length||profileSlots.length<=1)return false;
+  profileSlots.splice(slot,1);
   if(activeProfileSlot===slot){activeProfile=null;activeProfileSlot=-1;}
+  else if(activeProfileSlot>slot)activeProfileSlot--;
   writeProfileSlots(profileSlots); return true;
 }
 function resetActiveProgress(){
