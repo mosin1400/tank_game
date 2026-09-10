@@ -4,11 +4,10 @@
 
 ![Three.js](https://img.shields.io/badge/Three.js-WebGL-black?logo=three.js) ![Offline ready](https://img.shields.io/badge/Playable-Offline-8a9a4e) ![Language](https://img.shields.io/badge/Language-Persian-e6ead1)
 
-## نمایی از بازی
+## پوستر بازی
 
 ![ورود سینمایی بازی خط آهن آخر](docs/screenshots/main-menu.png)
 
-*ورود سینمایی «خط آهن آخر»؛ ثبت‌شده از نسخهٔ درحال‌اجرای بازی در Chrome.*
 
 ## آتش در سرو
 
