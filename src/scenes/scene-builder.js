@@ -106,6 +106,10 @@
       {sourceAsset:'assets/models/environment/m02/ruin-building-01.glb',x:-76,z:23,yaw:.15,size:18,collider:{type:'obb',hw:8,hd:7,h:10,material:'concrete',durability:160}},
       {sourceAsset:'assets/models/environment/m02/ruin-building-01.glb',x:46,z:-32,yaw:-.72,size:15,collider:{type:'obb',hw:7,hd:6,h:9,material:'concrete',durability:160}},
       {sourceAsset:'assets/models/environment/m02/ruin-building-01.glb',x:96,z:-14,yaw:.35,size:13,collider:{type:'obb',hw:6,hd:5,h:8,material:'concrete',durability:160}},
+      {sourceAsset:'assets/models/vehicles/uaz-452.glb',x:-67,z:54,yaw:-.32,size:4.7,collider:{type:'obb',hw:1.2,hd:2.4,h:2.2,material:'light-metal',durability:58}},
+      {sourceAsset:'assets/models/vehicles/soviet-offroad.glb',x:35,z:35,yaw:1.1,size:3.7,collider:{type:'obb',hw:1.1,hd:2,h:1.9,material:'light-metal',durability:48}},
+      {sourceAsset:'assets/models/vehicles/truck-04.glb',x:-101,z:77,yaw:.22,size:4.5,collider:{type:'obb',hw:1.35,hd:2.55,h:2.3,material:'light-metal',durability:62}},
+      {sourceAsset:'assets/models/vehicles/truck-05.glb',x:114,z:-68,yaw:-.45,size:4.5,collider:{type:'obb',hw:1.35,hd:2.55,h:2.3,material:'light-metal',durability:62}},
       ...[[-94,4],[-62,-12],[-18,8],[29,-8],[66,-28],[88,-57],[116,-25]].map(([x,z],index)=>({sourceAsset:'assets/models/environment/m02/ruin-wreckage.glb',x,z,yaw:index*.71,size:4.2,collider:{type:'circle',r:2.1,h:1.8,material:'light-metal',durability:26}}))
     ];
     if(!m02SetDressCache){
