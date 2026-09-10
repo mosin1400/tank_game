@@ -114,7 +114,7 @@
       setLegacyVisible:visible=>setLegacyWorldVisible(visible),
       addCollider:collider=>staticObs.push(collider),
       removeCollider:collider=>{const index=staticObs.indexOf(collider);if(index>=0)staticObs.splice(index,1);},
-      build:(layout,handle)=>buildOpeningScene(layout,handle)
+      build:(layout,handle)=>layout.id==='scene-02'?buildSoftGroundScene(layout,handle):buildOpeningScene(layout,handle)
     };
   }
   function buildOpeningScene(layout,handle){
@@ -209,6 +209,43 @@
     if(active.replacesLegacy&&active.deps.setLegacyVisible)active.deps.setLegacyVisible(true);
     active=null;
   }
+  function buildSoftGroundScene(layout,handle){
+    if(layout.id!=='scene-02')return;
+    const group=handle.root,addBox=(w,h,d,material,x,y,z,ry=0)=>mkBox(group,w,h,d,material,x,y,z,0,ry,0);
+    const mudMap=new THREE.TextureLoader().load('assets/images/m02-marsh-mud.png');
+    mudMap.colorSpace=THREE.SRGBColorSpace;mudMap.wrapS=mudMap.wrapT=THREE.RepeatWrapping;mudMap.repeat.set(12,12);
+    const mud=mat({map:mudMap,roughness:.96,metalness:0});
+    const water=mat({color:0x34423b,roughness:.24,metalness:.18,transparent:true,opacity:.76});
+    const wetWood=mat({color:0x453d27,roughness:.92}),reed=mat({color:0x6f7a42,roughness:1}),brick=industrialMaterial(0,0,{roughness:.82,metalness:.05});
+    const [pumpX,,pumpZ]=layout.landmarks.pumpHouse,[crossX,,crossZ]=layout.landmarks.timberCrossing,[lockX,,lockZ]=layout.landmarks.brokenLock,[exitX,,exitZ]=layout.landmarks.exitGate;
+    addBox(245,.08,235,water,0,-.05,5,0);addBox(166,.12,10,mud,7,.04,37,-.54);addBox(84,.12,8,mud,69,.05,-18,-.7);
+    // Pump-house is both the opening landmark and a cover/objective.
+    markProp(addBox(13,5.6,10,brick,pumpX,2.8,pumpZ,.06),'pump-house');markProp(addBox(15,.3,12,matRoof,pumpX,5.8,pumpZ,.06),'pump-roof');
+    handle.addCollider({type:'obb',x:pumpX,z:pumpZ,hw:6.8,hd:5.2,ry:.06,h:5.9,targetObject:group,material:'concrete',durability:170});
+    for(const [dx,dz] of [[-8,-6],[-6,8],[8,-7],[9,7]]){const pipe=markProp(new THREE.Mesh(new THREE.CylinderGeometry(.34,.42,4.8,12),matDark),'pump-pipe');pipe.rotation.z=Math.PI/2;pipe.position.set(pumpX+dx,1.1,pumpZ+dz);group.add(pipe);}
+    for(const [x,z,yaw] of [[pumpX-18,pumpZ+3,Math.PI/2],[pumpX+17,pumpZ-8,0],[pumpX+2,pumpZ+17,0]]){const fence=buildFence(group,x,z,18,yaw,wetWood);handle.addCollider({type:'obb',x,z,hw:9,hd:.22,ry:yaw,h:1.8,targetObject:fence,material:'wood',durability:32});}
+    for(const [x,z,yaw] of [[pumpX-13,pumpZ-12,.4],[pumpX+17,pumpZ+13,-.3]]){const truck=buildUtilityTruck(group,x,z,yaw);handle.addCollider({type:'obb',x,z,hw:1.45,hd:2.55,ry:yaw,h:2.2,targetObject:truck,material:'light-metal',durability:55});}
+    // Timber crossing follows one shared coordinate frame, including all planks and collision sides.
+    markProp(addBox(10,.4,22,wetWood,crossX,.28,crossZ,0),'timber-crossing');
+    for(let z=-9;z<=9;z+=2.1)markProp(addBox(11,.18,.42,matTrunk,crossX,.56,crossZ+z,0),'cross-plank');
+    for(const side of[-1,1]){addBox(.32,.8,22,matRust,crossX+side*4.9,.55,crossZ,0);handle.addCollider({type:'aabb',x:crossX+side*4.9,z:crossZ,hw:.3,hd:11,h:1.2,material:'steel',durability:100});}
+    buildPhaseSignal(handle,crossX+7,crossZ+9,1);
+    // Broken lock, directional exit gate and water-control cover.
+    markProp(addBox(16,2.8,4.5,brick,lockX,1.4,lockZ,-.2),'broken-lock');markProp(addBox(20,.3,5.6,matRoof,lockX,3,lockZ,-.2),'lock-roof');
+    handle.addCollider({type:'obb',x:lockX,z:lockZ,hw:8.2,hd:2.5,ry:-.2,h:3.2,material:'concrete',durability:220});
+    for(const [x,z,yaw] of [[lockX-10,lockZ+7,.15],[lockX+12,lockZ-8,-.4],[exitX-15,exitZ+10,.2],[exitX-4,exitZ-9,-.25]]){buildSandbags(group,x,z,yaw,5);handle.addCollider({type:'obb',x,z,hw:2.45,hd:.45,ry:yaw,h:.8,material:'sandbag',durability:25});}
+    markProp(addBox(.45,3.3,.45,wetWood,exitX-4,1.65,exitZ,0),'exit-post');markProp(addBox(.45,3.3,.45,wetWood,exitX+4,1.65,exitZ,0),'exit-post');markProp(addBox(8.5,.24,.4,wetWood,exitX,3.05,exitZ,0),'exit-beam');
+    handle.addCollider({type:'circle',x:exitX-4,z:exitZ,r:.58,h:3.3});handle.addCollider({type:'circle',x:exitX+4,z:exitZ,r:.58,h:3.3});buildPhaseSignal(handle,exitX-8,exitZ+5,2);
+    // Reeds, stumps, debris and puddle edges create near/middle/far depth without blocking the convoy route.
+    const reedClusters=[[-100,30],[-88,-25],[-61,-50],[-20,-35],[-4,1],[28,-38],[47,39],[78,25],[113,-4],[129,-60]];
+    for(const [baseX,baseZ] of reedClusters)for(let i=0;i<14;i++){const x=baseX+(i%4)*1.3,z=baseZ+Math.floor(i/4)*1.15;const stalk=markProp(new THREE.Mesh(new THREE.ConeGeometry(.16,.12,5),reed),'reed');stalk.scale.y=.8+(i%3)*.28;stalk.position.set(x,.55*stalk.scale.y,z);stalk.rotation.y=i*.67;group.add(stalk);}
+    for(const [x,z,s] of [[-74,29,.9],[-30,5,.75],[5,-23,.9],[34,43,.8],[72,20,1],[98,-13,.8],[119,-63,1.1]])buildBurnedTree(group,x,z,s);
+    for(const [x,z] of [[-27,47],[-6,33],[19,20],[39,6],[58,-8],[79,-28]]){const rubble=markProp(new THREE.Group(),'mud-rubble');rubble.position.set(x,0,z);group.add(rubble);for(let i=0;i<5;i++)mkBox(rubble,.45+i*.09,.2,.36,matRock,(i-2)*.38,.12,(i%2-.5)*.4,0,i*.5,0);}
+    const rally=(delay,speed,slot)=>({behavior:'follow-player',waypoints:[],startDelay:delay,speed,state:'run',followDistance:5.5,followSlot:slot});
+    for(const [role,x,z,yaw,state,move] of [['convoy-crew-a',pumpX-12,pumpZ+12,-.4,'aim',rally(.2,4,0)],['convoy-crew-b',pumpX+8,pumpZ+13,.7,'idle',rally(.75,3.9,1)],['depot-worker-a',pumpX-20,pumpZ-7,1.1,'repair',rally(1.2,3.7,2)],['depot-worker-b',pumpX+18,pumpZ+4,-1,'idle',rally(1.65,3.8,3)]])buildStoryCharacter(group,role,x,z,yaw,state,move);
+    const observer=buildStoryCharacter(group,'observer',layout.landmarks.reedTower[0],layout.landmarks.reedTower[2],Math.PI,'aim');observer.position.y=4;
+    for(const [x,z] of [[pumpX+5,pumpZ-12],[crossX-6,crossZ+7],[lockX+9,lockZ+5]]){const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:texGlow,color:0x8aa36b,transparent:true,opacity:.25,depthWrite:false}));glow.position.set(x,1.1,z);glow.scale.set(7,2.5,1);group.add(glow);}
+  }
   function setPhase(phase){
     if(!active)return false;
     active.phase=Math.max(0,Math.floor(+phase||0));
@@ -221,7 +258,7 @@
     const layout=sceneId&&SceneLibrary.getScene(sceneId);
     if(!layout)return null;
     const deps=configured||defaultDependencies();
-    const handle={id:layout.id,root:deps.createRoot(),colliders:[],phaseSignals:[],deps,replacesLegacy:layout.id==='scene-01',addCollider(collider){this.colliders.push(collider);deps.addCollider(collider);}};
+    const handle={id:layout.id,root:deps.createRoot(),colliders:[],phaseSignals:[],deps,replacesLegacy:layout.id==='scene-01'||layout.id==='scene-02',addCollider(collider){this.colliders.push(collider);deps.addCollider(collider);}};
     if(handle.replacesLegacy&&deps.setLegacyVisible)deps.setLegacyVisible(false);
     deps.addRoot(handle.root); deps.build(layout,handle); active=handle;setPhase(0); return handle;
   }

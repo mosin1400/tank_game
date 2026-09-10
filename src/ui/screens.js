@@ -54,6 +54,7 @@ function showBrief(i){
 }
 function clearWorld(){
   if(typeof OpeningOperation!=='undefined')OpeningOperation.dispose();
+  if(typeof SoftGroundOperation!=='undefined')SoftGroundOperation.dispose();
   if(typeof OpeningCinematic!=='undefined')OpeningCinematic.dispose();
   if(typeof CharacterCombat!=='undefined')CharacterCombat.reset();
   if(typeof CharacterNavigation!=='undefined')CharacterNavigation.reset();
@@ -105,6 +106,10 @@ function startMission(i){
   state='play'; document.body.dataset.state='play';
   if(curMission.def.operation==='opening-convoy'){
     OpeningOperation.start(curMission);
+    OpeningCinematic.start(SceneLibrary.getScene(curMission.def.sceneId));
+  }
+  if(curMission.def.operation==='soft-ground'){
+    SoftGroundOperation.start(curMission);
     OpeningCinematic.start(SceneLibrary.getScene(curMission.def.sceneId));
   }
   refreshWeaponSlots();

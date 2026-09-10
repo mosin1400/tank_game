@@ -52,8 +52,9 @@
   function applyBeat(index){
     if(!active||index===active.beat)return;
     active.beat=index;
-    active.api.setSubtitle(BEATS[index].text,BEATS[index].speaker);
-    active.api.onBeat(BEATS[index],index,STARTS[index]);
+    var beat=active.beats[index]||BEATS[index];
+    active.api.setSubtitle(beat.text,beat.speaker);
+    active.api.onBeat(beat,index,STARTS[index]);
   }
   function cleanup(state){
     if(!state||state.cleaned)return;
@@ -89,7 +90,7 @@
     if(!layout||typeof layout!=='object')return false;
     if(active)finish(false);
     var api=apiFrom(configured);
-    active={api:api,layout:layout,poses:makePoses(layout),elapsed:0,beat:-1,cleaned:false,finished:false};
+    active={api:api,layout:layout,poses:makePoses(layout),beats:Array.isArray(layout.cinematicDialogue)&&layout.cinematicDialogue.length===BEATS.length?layout.cinematicDialogue:BEATS,elapsed:0,beat:-1,cleaned:false,finished:false};
     api.lockControls(true);
     api.setMusicDuck(.55);
     applyBeat(0);

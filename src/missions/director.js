@@ -240,6 +240,13 @@ function updateDirector(dt){
     if(result.failed)openDefeat();
     return;
   }
+  if(M.def.operation==='soft-ground'){
+    if(OpeningCinematic.isActive()){OpeningCinematic.update(dt);return;}
+    if(!SoftGroundOperation.isActive())SoftGroundOperation.start(M);
+    const result=SoftGroundOperation.update(dt);
+    if(result.failed)openDefeat();
+    return;
+  }
   if(M.t==='destroy'){
     if(M.spawned>M.total){
       console.error('🚨 اسپاون اضافه! spawned:',M.spawned,'total:',M.total);
@@ -326,6 +333,7 @@ function openVictory(){
   const stars=player.hp>=70?3:(player.hp>=35?2:1);
   prog.u=Math.max(prog.u,Math.min(MISSIONS.length,M.idx+2));
   prog.s[M.idx]=Math.max(prog.s[M.idx]||0,stars);
+  if(M.def.persistentEffect&&activeProfile){activeProfile.effects[M.def.persistentEffect]=true;}
   saveProg();
   score+=500*(M.idx+1);
   document.getElementById('vicScore').textContent=faNum(score);

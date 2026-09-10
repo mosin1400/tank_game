@@ -6,7 +6,7 @@ const campaignMission=(id,act,title,briefing,primary,optional,enemies,airProfile
 });
 const CAMPAIGN_MISSIONS=Object.freeze([
   campaignMission('M01',1,'آتش در سرو','در سپیده‌دم بارانی، کاروان مرزی زیر آتش است؛ راه خروج را باز کن.',{kind:'operation',value:3,label:'کاروان را از آتش، جاده و دیده‌بان عبور بده'},{kind:'protect',value:3,label:'هر سه کامیون را سالم نگه دار'},['light','light','medium'],'none','scene-01','rain','dawn',{t:'operation',v:3,c:1,operation:'opening-convoy'},null,{stars:3,label:'نشان نگهبان سرو'}),
-  campaignMission('M02',1,'خاک نرم','ستون باید از مسیر فرعی باتلاقی خارج شود.',{kind:'survive',value:75,label:'کاروان را تا خروجی هدایت کن'},{kind:'protect',value:3,label:'کامیون‌ها در گل نمانند'},['light','medium'],'none','scene-02','mist','day',{t:'survive',v:75,c:1},null,{stars:3,label:'مسیر ایمن'}),
+  campaignMission('M02',1,'خاک نرم','ستون باید از مسیر فرعی باتلاقی خارج شود.',{kind:'operation',value:3,label:'کاروان را از سه گذرگاه مردابی تا خروجی هدایت کن'},{kind:'protect',value:3,label:'هر سه کامیون را سالم نگه دار'},['light','medium'],'none','scene-02','mist','day',{t:'operation',v:3,c:1,operation:'soft-ground'},'southernRouteOpen',{stars:3,label:'مسیر ایمن'}),
   campaignMission('M03',1,'پل یک‌نفره','دیده‌بان دشمن تنها گذرگاه ستون را هدف گرفته است.',{kind:'destroy',value:5,label:'دو سوی پل را پاکسازی کن'},{kind:'protect',value:1,label:'پل را سالم نگه دار'},['light','medium'],'none','scene-03','rain','day',{t:'destroy',v:5,c:1},null,{stars:3,label:'اعتماد مقاومت'}),
   campaignMission('M04',1,'چراغ‌های خاموش','چراغ‌گردان‌های دشمن کمین‌های شبانه را هدایت می‌کنند.',{kind:'assault',value:3,label:'سه چراغ‌گردان را خاموش کن'},{kind:'protect',value:4,label:'خانه‌ها را حفظ کن'},['light','light','medium'],'none','scene-04','rain','night',{t:'assault',v:3,c:1},null,{stars:3,label:'گل مرداب'}),
   campaignMission('M05',1,'مه بالای رهان','دیده‌بان‌های هوایی دشمن جای کاروان را در مه جست‌وجو می‌کنند.',{kind:'destroy',value:4,label:'به پناهگاه نیزاری برس'},{kind:'destroy',value:2,label:'بالن‌ها را نابود کن'},['light','medium'],'scout','scene-05','mist','day',{t:'destroy',v:4,c:1},null,{stars:3,label:'هشدار هوایی'}),
@@ -48,5 +48,5 @@ const CAMPAIGN_MISSIONS=Object.freeze([
 ]);
 CAMPS=['مرز خاکستر','رود آهن','کوهستان خاموش','راه آخر'];
 /* کنترل‌کنندهٔ اختصاصی M01 در تحویل بعد جای این مسیر سازگار را می‌گیرد. */
-MISSIONS=CAMPAIGN_MISSIONS.map(m=>({n:m.title,d:m.briefing,t:m.runtime.operation?'survive':m.runtime.t,v:m.runtime.v,p:m.palette,c:m.act,sceneId:m.sceneId,operation:m.runtime.operation||null,bossName:m.runtime.bossName,bossHp:m.runtime.bossHp}));
+MISSIONS=CAMPAIGN_MISSIONS.map(m=>({n:m.title,d:m.briefing,t:m.runtime.operation?'survive':m.runtime.t,v:m.runtime.v,p:m.palette,c:m.act,sceneId:m.sceneId,operation:m.runtime.operation||null,persistentEffect:m.persistentEffect||null,bossName:m.runtime.bossName,bossHp:m.runtime.bossHp}));
 function getCampaignMission(id){return CAMPAIGN_MISSIONS.find(m=>m.id===id)||null;}
