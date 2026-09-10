@@ -6,7 +6,7 @@ const controls=fs.readFileSync(new URL('../src/input/controls.js',import.meta.ur
 const player=fs.readFileSync(new URL('../src/entities/player.js',import.meta.url),'utf8');
 
 assert.match(settings,/presets/,'settings must expose graphics quality presets');
-assert.match(settings,/low:\{pixelRatio:1,shadows:false,bloom:false,effects:\.07/,
+assert.match(settings,/low:\{pixelRatio:1,shadows:false,bloom:false,effects:\.02/,
   'low quality must aggressively suppress fire and smoke');
 assert.match(settings,/sampleFrame/,'settings must track frame performance for automatic quality');
 assert.match(settings,/localStorage/,'settings must persist the chosen configuration');

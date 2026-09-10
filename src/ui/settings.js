@@ -1,7 +1,7 @@
 (function(global){
   'use strict';
   var key='t34.settings.v1';
-  var presets={low:{pixelRatio:1,shadows:false,bloom:false,effects:.07,projectileDetail:'glow',label:'کم'},medium:{pixelRatio:1.25,shadows:true,bloom:false,effects:.65,projectileDetail:'glow',label:'متوسط'},high:{pixelRatio:1.55,shadows:true,bloom:true,effects:.82,projectileDetail:'mesh',label:'زیاد'},cinematic:{pixelRatio:2,shadows:true,bloom:true,effects:1,projectileDetail:'full',label:'سینمایی'}};
+  var presets={low:{pixelRatio:1,shadows:false,bloom:false,effects:.02,projectileDetail:'glow',projectilePool:14,effectDetail:'minimal',effectSpritePool:8,muzzleLightScale:0,label:'کم'},medium:{pixelRatio:1.25,shadows:true,bloom:false,effects:.2,projectileDetail:'sprite',projectilePool:28,effectDetail:'compact',effectSpritePool:20,muzzleLightScale:0,label:'متوسط'},high:{pixelRatio:1.55,shadows:true,bloom:true,effects:.82,projectileDetail:'mesh',projectilePool:70,effectDetail:'full',effectSpritePool:54,muzzleLightScale:1,label:'زیاد'},cinematic:{pixelRatio:2,shadows:true,bloom:true,effects:1,projectileDetail:'full',projectilePool:70,effectDetail:'full',effectSpritePool:70,muzzleLightScale:1,label:'سینمایی'}};
   var state={quality:'high',auto:true,showFps:true,shake:1,fov:46,volume:1};
   var fps={elapsed:0,frames:0,value:60,lowFor:0};
   function load(){try{Object.assign(state,JSON.parse(localStorage.getItem(key)||'{}'));}catch(error){}return state;}
@@ -10,6 +10,10 @@
     var preset=presets[state.quality]||presets.high;
     global.qualityEffectsScale=preset.effects;
     global.projectileDetail=preset.projectileDetail;
+    global.projectilePool=preset.projectilePool;
+    global.effectDetail=preset.effectDetail;
+    global.effectSpritePool=preset.effectSpritePool;
+    global.muzzleLightScale=preset.muzzleLightScale;
     if(typeof renderer==='undefined'||!renderer)return state;
     renderer.setPixelRatio(Math.min(devicePixelRatio,preset.pixelRatio));renderer.setSize(innerWidth,innerHeight);
     renderer.shadowMap.enabled=preset.shadows;
@@ -31,7 +35,7 @@
     var auto=root.querySelector('#setAuto'),fpsEl=root.querySelector('#setFps');if(auto)auto.checked=state.auto;if(fpsEl)fpsEl.textContent='FPS: '+fps.value;
   }
   function init(){
-    load();apply();
+    prepare();
     if(document.getElementById('settingsPanel'))return;
     var root=document.createElement('section');root.id='settingsPanel';root.className='settings-panel';root.hidden=true;
     root.innerHTML='<div class="settings-card"><div class="settings-head"><b>تنظیمات عملیات</b><button id="closeSettings">×</button></div><div class="settings-row"><span>کیفیت گرافیک</span><div class="settings-options">'+Object.keys(presets).map(function(id){return '<button data-quality="'+id+'">'+presets[id].label+'</button>';}).join('')+'</div></div><label class="settings-row"><span>بهینه‌سازی خودکار</span><input id="setAuto" type="checkbox"></label><div class="settings-row"><span>شدت لرزش</span><input id="setShake" type="range" min="0" max="1" step=".1" value="'+state.shake+'"></div><div class="settings-row"><span>میدان دید</span><input id="setFov" type="range" min="40" max="60" step="1" value="'+state.fov+'"></div><div class="settings-row"><span>صدای کلی</span><input id="setVolume" type="range" min="0" max="1" step=".05" value="'+state.volume+'"></div><button id="setFullscreen" class="bigbtn ghost">تمام‌صفحه</button><div id="setFps" class="settings-fps"></div><p>کلیدها: Ctrl حرکت دقیق · Alt نگاه آزاد · C دوربین · Z علامت هدف · G دودزا · F1–F4 فرمان جوخه</p></div>';
@@ -44,5 +48,6 @@
     root.querySelector('#closeSettings').addEventListener('click',toggle);render();
   }
   function toggle(){var root=document.getElementById('settingsPanel');if(!root)return;root.hidden=!root.hidden;render();}
-  global.GameSettings=Object.freeze({init:init,toggle:toggle,apply:apply,setQuality:setQuality,sampleFrame:sampleFrame,get:function(){return state;},presets:presets});
+  function prepare(){load();apply();return state;}
+  global.GameSettings=Object.freeze({init:init,toggle:toggle,apply:apply,prepare:prepare,setQuality:setQuality,sampleFrame:sampleFrame,get:function(){return state;},presets:presets});
 })(globalThis);

@@ -74,6 +74,7 @@ try{
   step('بارگذاری شخصیت‌ها و حرکت‌های انسانی…',16); await CharacterManager.preload();
 
   step('ساخت صحنه، نور و دوربین…',22); await frame();
+  GameSettings.prepare();
   initCore();
 
   step('نقاشی بافت‌ها (زره، زنگ، خاک)…',36); await frame();

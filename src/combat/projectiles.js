@@ -3,7 +3,8 @@ function initBullets(){
   const bulletGeo=new THREE.CylinderGeometry(0.055,0.075,0.72,10); bulletGeo.rotateX(Math.PI/2);
   const coreGeo=new THREE.SphereGeometry(.085,10,8);
   const tailGeo=new THREE.ConeGeometry(.12,.46,8); tailGeo.rotateX(-Math.PI/2);
-  for(let i=0;i<70;i++){
+  const projectilePool=Math.max(8,globalThis.projectilePool||70);
+  for(let i=0;i<projectilePool;i++){
     const m=new THREE.Group(); m.visible=false; scene.add(m);
     const shellBody=new THREE.Mesh(bulletGeo,matShellP); shellBody.name='shellBody';m.add(shellBody);
     const shellCore=new THREE.Mesh(coreGeo,matShellP); shellCore.name='shellCore';shellCore.position.z=.36;m.add(shellCore);
@@ -17,19 +18,20 @@ function initBullets(){
   }
 }
 function spawnBullet(pos,dir,speed,owner,dmg,kind,opts={}){
-  const b=bullets.find(o=>!o.active); if(!b)return;
+  const projectilePoolLimit=Math.max(8,globalThis.projectilePool||bullets.length);
+  const b=bullets.find((o,index)=>index<projectilePoolLimit&&!o.active); if(!b)return;
   b.active=true; b.owner=owner; b.kind=kind; b.dmg=dmg; b.life=2.8;
   b.ricocheted=false;
   b.splash=opts.splash||0; b.expl=opts.expl||0.7; b.gravity=opts.gravity||0; b.trailT=0;
   b.mesh.visible=true; b.mesh.position.copy(pos); b.srcPos=pos.clone();
   b.vel.copy(dir).multiplyScalar(speed);
-  const lightweight=(globalThis.projectileDetail||'mesh')==='glow';
+  const detail=globalThis.projectileDetail||'mesh',lightweight=detail==='glow'||detail==='sprite';
   const material=kind==='mg'?matMG:(kind==='rocket'?matRocket:(owner==='player'?matShellP:matShellE));
   b.body.material=material;b.core.material=material;b.tail.material=material;
   b.mesh.scale.setScalar(kind==='mg'?0.5:(kind==='rocket'?1.1:1));
   b.body.visible=!lightweight;b.tail.visible=!lightweight&&kind!=='mg';b.core.visible=!lightweight&&kind!=='mg';
   b.glow.material.color.set(kind==='mg'?0xffdd88:(kind==='rocket'?0xff8b44:owner==='player'?0xffd27c:0xff6a4a));
-  b.glow.scale.setScalar(lightweight?(kind==='mg'?.28:.48):.9);
+  b.glow.scale.setScalar(lightweight?(detail==='glow'?(kind==='mg'?.22:.32):(kind==='mg'?.3:.52)):.9);
   b.light.color.copy(b.glow.material.color);b.light.intensity=lightweight||kind==='mg'?0:2.4;
   b.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),dir);
 }
