@@ -96,6 +96,34 @@
     mkCyl(tree,.06*scale,.1*scale,1.5*scale,matTrunk,-.35*scale,2.4*scale,.05,0,0,.85,6);
     return tree;
   }
+  let m02SetDressCache=null;
+  function loadM02SetDress(parent,handle){
+    if(typeof GLTFLoader==='undefined')return;
+    const entries=[
+      {sourceAsset:'assets/models/environment/m02/harbor-industrial-shack.glb',texture:'assets/images/m02-harbor/3td_MetalSiding_01.jpg',x:-45,z:48,yaw:.06,size:14,collider:{type:'obb',hw:7,hd:5,h:6,material:'wood',durability:110}},
+      {sourceAsset:'assets/models/environment/m02/harbor-dock.glb',texture:'assets/images/m02-harbor/3td_DockWood_01.jpg',x:14,z:30,yaw:0,size:13,collider:{type:'obb',hw:6,hd:4,h:2,material:'wood',durability:54}},
+      {sourceAsset:'assets/models/environment/m02/harbor-watch-stand.glb',texture:'assets/images/m02-harbor/3td_planks_03.jpg',x:53,z:2,yaw:Math.PI,size:8,collider:{type:'circle',r:2.4,h:7,material:'wood',durability:65}},
+      {sourceAsset:'assets/models/environment/m02/ruin-building-01.glb',x:-76,z:23,yaw:.15,size:18,collider:{type:'obb',hw:8,hd:7,h:10,material:'concrete',durability:160}},
+      {sourceAsset:'assets/models/environment/m02/ruin-building-01.glb',x:46,z:-32,yaw:-.72,size:15,collider:{type:'obb',hw:7,hd:6,h:9,material:'concrete',durability:160}},
+      {sourceAsset:'assets/models/environment/m02/ruin-building-01.glb',x:96,z:-14,yaw:.35,size:13,collider:{type:'obb',hw:6,hd:5,h:8,material:'concrete',durability:160}},
+      ...[[-94,4],[-62,-12],[-18,8],[29,-8],[66,-28],[88,-57],[116,-25]].map(([x,z],index)=>({sourceAsset:'assets/models/environment/m02/ruin-wreckage.glb',x,z,yaw:index*.71,size:4.2,collider:{type:'circle',r:2.1,h:1.8,material:'light-metal',durability:26}}))
+    ];
+    if(!m02SetDressCache){
+      const loader=new GLTFLoader(),sources=[...new Set(entries.map(entry=>entry.sourceAsset))];
+      m02SetDressCache=Promise.all(sources.map(source=>loader.loadAsync(source).then(asset=>[source,asset.scene]))).then(items=>Object.fromEntries(items)).catch(error=>{m02SetDressCache=null;throw error;});
+    }
+    m02SetDressCache.then(assets=>entries.forEach(entry=>{
+      if(!parent.parent||!assets[entry.sourceAsset])return;
+      const model=assets[entry.sourceAsset].clone(true);model.name='m02-set-'+entry.sourceAsset.split('/').pop().replace('.glb','');
+      model.userData.sourceAsset=entry.sourceAsset;model.position.set(entry.x,0,entry.z);model.rotation.y=entry.yaw;
+      model.updateMatrixWorld(true);const initialBox=new THREE.Box3().setFromObject(model),initialSize=initialBox.getSize(new THREE.Vector3());
+      const span=Math.max(initialSize.x,initialSize.y,initialSize.z,0.01),scale=entry.size/span;model.scale.multiplyScalar(scale);model.updateMatrixWorld(true);
+      const alignedBox=new THREE.Box3().setFromObject(model);model.position.y-=alignedBox.min.y;
+      const texture=entry.texture?new THREE.TextureLoader().load(entry.texture):null;if(texture)texture.colorSpace=THREE.SRGBColorSpace;
+      model.traverse(object=>{if(object.isMesh){object.castShadow=true;object.receiveShadow=true;if(texture){const multiple=Array.isArray(object.material),base=multiple?object.material:[object.material],mapped=base.map(material=>{const clone=material.clone();clone.map=texture;clone.needsUpdate=true;return clone;});object.material=multiple?mapped:mapped[0];}}});parent.add(model);
+      handle.addCollider(Object.assign({x:entry.x,z:entry.z,ry:entry.yaw,targetObject:model,sourceAsset:entry.sourceAsset},entry.collider));
+    })).catch(error=>console.warn('M02 set dressing could not load',error));
+  }
   function buildLamp(parent,x,z){
     const lamp=markProp(new THREE.Group(),'yard-lamp');lamp.position.set(x,0,z);parent.add(lamp);
     mkCyl(lamp,.07,.1,4.8,matDark,0,2.4,0,0,0,0,8);mkBox(lamp,.65,.16,.38,matGray,.25,4.65,0);
@@ -218,7 +246,9 @@
     const water=mat({color:0x34423b,roughness:.24,metalness:.18,transparent:true,opacity:.76});
     const wetWood=mat({color:0x453d27,roughness:.92}),reed=mat({color:0x6f7a42,roughness:1}),brick=industrialMaterial(0,0,{roughness:.82,metalness:.05});
     const [pumpX,,pumpZ]=layout.landmarks.pumpHouse,[crossX,,crossZ]=layout.landmarks.timberCrossing,[lockX,,lockZ]=layout.landmarks.brokenLock,[exitX,,exitZ]=layout.landmarks.exitGate;
-    addBox(245,.08,235,water,0,-.05,5,0);addBox(166,.12,10,mud,7,.04,37,-.54);addBox(84,.12,8,mud,69,.05,-18,-.7);
+    addBox(245,.05,235,mud,0,-.08,5,0);
+    for(const [w,d,x,z,yaw] of [[96,28,-6,-2,-.12],[54,20,61,-40,.24],[42,16,-83,16,-.34],[58,14,93,22,.15]])addBox(w,.055,d,water,x,-.02,z,yaw);
+    addBox(166,.12,10,mud,7,.04,37,-.54);addBox(84,.12,8,mud,69,.05,-18,-.7);
     // Pump-house is both the opening landmark and a cover/objective.
     markProp(addBox(13,5.6,10,brick,pumpX,2.8,pumpZ,.06),'pump-house');markProp(addBox(15,.3,12,matRoof,pumpX,5.8,pumpZ,.06),'pump-roof');
     handle.addCollider({type:'obb',x:pumpX,z:pumpZ,hw:6.8,hd:5.2,ry:.06,h:5.9,targetObject:group,material:'concrete',durability:170});
@@ -241,6 +271,7 @@
     for(const [baseX,baseZ] of reedClusters)for(let i=0;i<14;i++){const x=baseX+(i%4)*1.3,z=baseZ+Math.floor(i/4)*1.15;const stalk=markProp(new THREE.Mesh(new THREE.ConeGeometry(.16,.12,5),reed),'reed');stalk.scale.y=.8+(i%3)*.28;stalk.position.set(x,.55*stalk.scale.y,z);stalk.rotation.y=i*.67;group.add(stalk);}
     for(const [x,z,s] of [[-74,29,.9],[-30,5,.75],[5,-23,.9],[34,43,.8],[72,20,1],[98,-13,.8],[119,-63,1.1]])buildBurnedTree(group,x,z,s);
     for(const [x,z] of [[-27,47],[-6,33],[19,20],[39,6],[58,-8],[79,-28]]){const rubble=markProp(new THREE.Group(),'mud-rubble');rubble.position.set(x,0,z);group.add(rubble);for(let i=0;i<5;i++)mkBox(rubble,.45+i*.09,.2,.36,matRock,(i-2)*.38,.12,(i%2-.5)*.4,0,i*.5,0);}
+    loadM02SetDress(group,handle);
     const rally=(delay,speed,slot)=>({behavior:'follow-player',waypoints:[],startDelay:delay,speed,state:'run',followDistance:5.5,followSlot:slot});
     for(const [role,x,z,yaw,state,move] of [['convoy-crew-a',pumpX-12,pumpZ+12,-.4,'aim',rally(.2,4,0)],['convoy-crew-b',pumpX+8,pumpZ+13,.7,'idle',rally(.75,3.9,1)],['depot-worker-a',pumpX-20,pumpZ-7,1.1,'repair',rally(1.2,3.7,2)],['depot-worker-b',pumpX+18,pumpZ+4,-1,'idle',rally(1.65,3.8,3)]])buildStoryCharacter(group,role,x,z,yaw,state,move);
     const observer=buildStoryCharacter(group,'observer',layout.landmarks.reedTower[0],layout.landmarks.reedTower[2],Math.PI,'aim');observer.position.y=4;

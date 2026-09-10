@@ -23,12 +23,14 @@ function spawnBullet(pos,dir,speed,owner,dmg,kind,opts={}){
   b.splash=opts.splash||0; b.expl=opts.expl||0.7; b.gravity=opts.gravity||0; b.trailT=0;
   b.mesh.visible=true; b.mesh.position.copy(pos); b.srcPos=pos.clone();
   b.vel.copy(dir).multiplyScalar(speed);
+  const lightweight=(globalThis.projectileDetail||'mesh')==='glow';
   const material=kind==='mg'?matMG:(kind==='rocket'?matRocket:(owner==='player'?matShellP:matShellE));
   b.body.material=material;b.core.material=material;b.tail.material=material;
   b.mesh.scale.setScalar(kind==='mg'?0.5:(kind==='rocket'?1.1:1));
-  b.tail.visible=kind!=='mg';b.core.visible=kind!=='mg';
+  b.body.visible=!lightweight;b.tail.visible=!lightweight&&kind!=='mg';b.core.visible=!lightweight&&kind!=='mg';
   b.glow.material.color.set(kind==='mg'?0xffdd88:(kind==='rocket'?0xff8b44:owner==='player'?0xffd27c:0xff6a4a));
-  b.light.color.copy(b.glow.material.color);b.light.intensity=kind==='mg'?0:2.4;
+  b.glow.scale.setScalar(lightweight?(kind==='mg'?.28:.48):.9);
+  b.light.color.copy(b.glow.material.color);b.light.intensity=lightweight||kind==='mg'?0:2.4;
   b.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),dir);
 }
 const PU={

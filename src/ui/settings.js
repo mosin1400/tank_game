@@ -1,7 +1,7 @@
 (function(global){
   'use strict';
   var key='t34.settings.v1';
-  var presets={low:{pixelRatio:1,shadows:false,bloom:false,effects:.07,label:'کم'},medium:{pixelRatio:1.25,shadows:true,bloom:false,effects:.65,label:'متوسط'},high:{pixelRatio:1.55,shadows:true,bloom:true,effects:.82,label:'زیاد'},cinematic:{pixelRatio:2,shadows:true,bloom:true,effects:1,label:'سینمایی'}};
+  var presets={low:{pixelRatio:1,shadows:false,bloom:false,effects:.07,projectileDetail:'glow',label:'کم'},medium:{pixelRatio:1.25,shadows:true,bloom:false,effects:.65,projectileDetail:'glow',label:'متوسط'},high:{pixelRatio:1.55,shadows:true,bloom:true,effects:.82,projectileDetail:'mesh',label:'زیاد'},cinematic:{pixelRatio:2,shadows:true,bloom:true,effects:1,projectileDetail:'full',label:'سینمایی'}};
   var state={quality:'high',auto:true,showFps:true,shake:1,fov:46,volume:1};
   var fps={elapsed:0,frames:0,value:60,lowFor:0};
   function load(){try{Object.assign(state,JSON.parse(localStorage.getItem(key)||'{}'));}catch(error){}return state;}
@@ -9,6 +9,7 @@
   function apply(){
     var preset=presets[state.quality]||presets.high;
     global.qualityEffectsScale=preset.effects;
+    global.projectileDetail=preset.projectileDetail;
     if(typeof renderer==='undefined'||!renderer)return state;
     renderer.setPixelRatio(Math.min(devicePixelRatio,preset.pixelRatio));renderer.setSize(innerWidth,innerHeight);
     renderer.shadowMap.enabled=preset.shadows;
