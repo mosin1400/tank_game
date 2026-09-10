@@ -82,11 +82,26 @@
     for(let i=0;i<count-1;i++)mkBox(wall,.95,.34,.48,matBag,(i-(count-2)/2)*.88,.5,0);
     return wall;
   }
+  const utilityVehicleSource='assets/models/vehicles/uaz-452.glb';
+  let utilityVehicleCache=null;
+  function replaceUtilityTruck(root,placeholder,source=utilityVehicleSource){
+    if(typeof GLTFLoader==='undefined')return;
+    if(!utilityVehicleCache)utilityVehicleCache=Object.create(null);
+    if(!utilityVehicleCache[source])utilityVehicleCache[source]=new GLTFLoader().loadAsync(source).then(asset=>asset.scene).catch(error=>{delete utilityVehicleCache[source];throw error;});
+    utilityVehicleCache[source].then(asset=>{
+      if(!root.parent||!asset)return;
+      const model=asset.clone(true);model.name='parked-real-vehicle';model.updateMatrixWorld(true);
+      const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3()),scale=4.5/Math.max(size.x,size.y,size.z,.01);model.scale.setScalar(scale);model.updateMatrixWorld(true);
+      const aligned=new THREE.Box3().setFromObject(model);model.position.y-=aligned.min.y;model.traverse(object=>{if(object.isMesh){object.castShadow=true;object.receiveShadow=true;}});root.add(model);placeholder.visible=false;
+    }).catch(error=>console.warn('Utility vehicle model could not load',error));
+  }
   function buildUtilityTruck(parent,x,z,yaw){
     const truck=markProp(new THREE.Group(),'parked-truck');truck.position.set(x,0,z);truck.rotation.y=yaw||0;parent.add(truck);
-    mkBox(truck,2.2,1.15,2.2,matGray,0,1.15,1.25);mkBox(truck,2.35,.55,4.1,matRust,0,.72,-1);
-    mkBox(truck,2.1,1.25,2.55,matBag,0,1.45,-1.05);
-    for(const z0 of[-2.25,.9])for(const side of[-1,1])mkCyl(truck,.48,.48,.22,matDark,side*1.12,.48,z0,0,0,Math.PI/2,12);
+    const placeholder=new THREE.Group();placeholder.name='parked-vehicle-placeholder';truck.add(placeholder);
+    mkBox(placeholder,2.2,1.15,2.2,matGray,0,1.15,1.25);mkBox(placeholder,2.35,.55,4.1,matRust,0,.72,-1);
+    mkBox(placeholder,2.1,1.25,2.55,matBag,0,1.45,-1.05);
+    for(const z0 of[-2.25,.9])for(const side of[-1,1])mkCyl(placeholder,.48,.48,.22,matDark,side*1.12,.48,z0,0,0,Math.PI/2,12);
+    replaceUtilityTruck(truck,placeholder);
     return truck;
   }
   function buildBurnedTree(parent,x,z,scale=1){
@@ -108,8 +123,8 @@
       {sourceAsset:'assets/models/environment/m02/ruin-building-01.glb',x:96,z:-14,yaw:.35,size:13,collider:{type:'obb',hw:6,hd:5,h:8,material:'concrete',durability:160}},
       {sourceAsset:'assets/models/vehicles/uaz-452.glb',x:-67,z:54,yaw:-.32,size:4.7,collider:{type:'obb',hw:1.2,hd:2.4,h:2.2,material:'light-metal',durability:58}},
       {sourceAsset:'assets/models/vehicles/soviet-offroad.glb',x:35,z:35,yaw:1.1,size:3.7,collider:{type:'obb',hw:1.1,hd:2,h:1.9,material:'light-metal',durability:48}},
-      {sourceAsset:'assets/models/vehicles/truck-04.glb',x:-101,z:77,yaw:.22,size:4.5,collider:{type:'obb',hw:1.35,hd:2.55,h:2.3,material:'light-metal',durability:62}},
-      {sourceAsset:'assets/models/vehicles/truck-05.glb',x:114,z:-68,yaw:-.45,size:4.5,collider:{type:'obb',hw:1.35,hd:2.55,h:2.3,material:'light-metal',durability:62}},
+      {sourceAsset:'assets/models/vehicles/uaz-452-destroyed.glb',x:-101,z:77,yaw:.22,size:4.5,collider:{type:'obb',hw:1.35,hd:2.55,h:2.3,material:'light-metal',durability:62}},
+      {sourceAsset:'assets/models/vehicles/soviet-offroad.glb',x:114,z:-68,yaw:-.45,size:3.7,collider:{type:'obb',hw:1.1,hd:2,h:1.9,material:'light-metal',durability:48}},
       ...[[-94,4],[-62,-12],[-18,8],[29,-8],[66,-28],[88,-57],[116,-25]].map(([x,z],index)=>({sourceAsset:'assets/models/environment/m02/ruin-wreckage.glb',x,z,yaw:index*.71,size:4.2,collider:{type:'circle',r:2.1,h:1.8,material:'light-metal',durability:26}}))
     ];
     if(!m02SetDressCache){

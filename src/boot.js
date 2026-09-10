@@ -67,7 +67,7 @@
     }
     return {three:CDNs[0]+'/build/three.module.min.js',addons:CDNs[0]+'/examples/jsm/',label:CDNs[0]};
   }
-  var BUILD_VERSION='20260910-vehicle-convoy-v1';
+  var BUILD_VERSION='20260910-textured-jeep-v1';
   var GAME_SCRIPTS=[
     'src/core/runtime.js','src/ui/settings.js','src/assets/character-roster.js','src/entities/animation-manager.js','src/entities/weapon-models.js','src/entities/character-combat.js','src/entities/character-navigation.js','src/entities/tactical-command.js','src/entities/character-manager.js','src/entities/tank-aiming.js','src/render/renderer.js','src/scenes/scene-01.js','src/scenes/scene-02.js','src/scenes/scene-library.js','src/scenes/scene-builder.js','src/world/battlefield.js',
     'src/combat/effects.js','src/audio/audio.js','src/missions/definitions.js',

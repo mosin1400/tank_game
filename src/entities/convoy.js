@@ -1,7 +1,7 @@
 /* ================= کاروان محافظت‌شونده ================= */
 (function(root){
   let active=[];
-  const TRUCK_MODELS=['assets/models/vehicles/truck-01.glb','assets/models/vehicles/truck-02.glb','assets/models/vehicles/truck-03.glb'];
+  const TRUCK_MODELS=['assets/models/vehicles/soviet-offroad.glb','assets/models/vehicles/soviet-offroad.glb','assets/models/vehicles/soviet-offroad.glb'];
   let truckModelCache=null;
   function preloadTruckModels(){
     if(truckModelCache)return truckModelCache;
@@ -13,10 +13,10 @@
   function attachVehicleModel(root,index,placeholder){
     preloadTruckModels().then(models=>{
       if(!root.parent||!models[index])return;
-      const model=models[index].clone(true);model.name='convoy-truck-model';model.rotation.y=Math.PI;model.updateMatrixWorld(true);
+      const model=models[index].clone(true);model.name='convoy-jeep-model';model.rotation.y=0;model.updateMatrixWorld(true);
       const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3()),scale=4.45/Math.max(size.x,size.y,size.z,.01);model.scale.setScalar(scale);model.updateMatrixWorld(true);
       const aligned=new THREE.Box3().setFromObject(model);model.position.y-=aligned.min.y;
-      const tint=[0x65724a,0x74765a,0x5b6a47][index%3];model.traverse(object=>{if(!object.isMesh)return;object.castShadow=true;object.receiveShadow=true;const multiple=Array.isArray(object.material),materials=(multiple?object.material:[object.material]).map(material=>{const clone=material.clone();clone.color.multiplyScalar(.82);clone.color.lerp(new THREE.Color(tint),.28);clone.needsUpdate=true;return clone;});object.material=multiple?materials:materials[0];});
+      model.traverse(object=>{if(!object.isMesh)return;object.castShadow=true;object.receiveShadow=true;});
       root.add(model);placeholder.visible=false;
     }).catch(error=>console.warn('Convoy vehicle model could not load',error));
   }
