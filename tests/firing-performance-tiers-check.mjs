@@ -11,7 +11,9 @@ if(!settings.includes('prepare:prepare'))throw new Error('settings must prepare 
 if(!runtime.includes('GameSettings.prepare();'))throw new Error('runtime must apply saved quality before creating projectile pools');
 if(!projectiles.includes('globalThis.projectilePool'))throw new Error('projectile pool must obey active quality capacity');
 if(!projectiles.includes('projectilePoolLimit'))throw new Error('projectile spawning must respect the active quality limit');
-if(!effects.includes("effectDetail()==='minimal'"))throw new Error('minimal quality must bypass heavy explosion work');
+if(!effects.includes('function getEffectDetail()'))throw new Error('effects must use a private quality accessor, not a window property name');
+if(effects.includes('function effectDetail()'))throw new Error('effect quality accessor must not collide with global.effectDetail');
+if(!effects.includes("getEffectDetail()==='minimal'"))throw new Error('minimal quality must bypass heavy explosion work');
 if(!effects.includes('muzzleLightScale'))throw new Error('impact lights must be scaled by quality tier');
 
 console.log('firing-performance-tiers-check: PASS');
