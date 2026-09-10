@@ -4,6 +4,12 @@
 
 ![Three.js](https://img.shields.io/badge/Three.js-WebGL-black?logo=three.js) ![Offline ready](https://img.shields.io/badge/Playable-Offline-8a9a4e) ![Language](https://img.shields.io/badge/Language-Persian-e6ead1)
 
+## نمایی از بازی
+
+![ورود سینمایی بازی خط آهن آخر](docs/screenshots/main-menu.png)
+
+*ورود سینمایی «خط آهن آخر»؛ ثبت‌شده از نسخهٔ درحال‌اجرای بازی در Chrome.*
+
 ## آتش در سرو
 
 در عملیات آغازین، ستون خودی را از حیاط سوختِ زیر بمباران عبور می‌دهی؛ از ریل و واگن‌ها، کانال، جادهٔ شکسته و برج دیده‌بانی می‌گذری تا راه خروج باز بماند. بازی فقط یک میدان تیر نیست: تانک، جوخه، کاروان، روایت و محیط همه در یک جریان عملیاتی به هم وصل‌اند.
